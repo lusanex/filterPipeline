@@ -1,0 +1,63 @@
+#ifndef PORT_H
+#define PORT_H
+
+#include <queue>
+#include <string>
+#include "packet.h"
+#include "portexception.h"
+
+using namespace std;
+
+/*
+ * Port.h - A Port class for managing Packet transmission
+ * Author: Erich Gutierrez Chavez
+ * Project: Packet and Port Management
+ * Description:
+ * - The Port class works with Packet<T> objects.
+ * - Allows writing, reading, and managing Packet objects in a queue.
+ * - Ensures that the queue only accepts Packets with increasing timestamps.
+ * - Includes a configurable MAX_SIZE to limit the size of the queue.
+ */
+
+
+template <typename T>
+class Port {
+    private:
+        queue<Packet<T>> dataQueue; //Queue for holding packets
+        long long latestTimestamp;  //Tracks the latest timestamp
+        const size_t MAX_QUEUE_SIZE = 100;
+
+    public:
+
+        Port(size_t maxQueueSize = 100)
+        : latestTimestamp(0), MAX_QUEUE_SIZE(maxQueueSize) {}
+
+
+
+        void write(const Packet<T>& packet) {
+            if(packet.getTimestamp() > latestTimestamp){
+                if(dataQueue.size() >= MAX_QUEUE_SIZE){
+                    dataQueue.pop();
+                }
+                dataQueue.push(packet);
+                latestTimestamp = packet.getTimestamp();
+            }
+        }
+        
+        Packet<T> read() {
+            if(dataQueue.empty()){
+                throw PortException("Port is empty") ;
+            }
+            Packet<T> packet = dataQueue.front();
+            dataQueue.pop();
+            return packet;
+        }
+
+        size_t size() const {
+            return dataQueue.size();
+        }
+
+       
+};
+
+#endif

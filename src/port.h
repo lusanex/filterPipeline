@@ -46,6 +46,7 @@ class Port {
         
         Packet<T> read() {
             if(dataQueue.empty()){
+                //Costum exception class
                 throw PortException("Port is empty") ;
             }
             Packet<T> packet = dataQueue.front();

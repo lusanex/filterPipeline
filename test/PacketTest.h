@@ -18,8 +18,6 @@ public:
         testCopyAssignmentOperator();
         testMoveConstructor();
         testMoveAssignmentOperator();
-        testSetMethod();
-        testSetSameAsMethod();
         testTimestamp();
         testArrayOfPackets();
         cout << "All tests passed successfully!" << endl;
@@ -70,27 +68,10 @@ private:
         cout << "Move Assignment Operator test passed!" << endl;
     }
 
-    static void testSetMethod() {
-        Packet<string> packet(0);
-        packet.set<string>(); // Default set to empty string
-        assert(packet.getData().empty());
-        cout << "Set Method test passed!" << endl;
-    }
-
-    static void testSetSameAsMethod() {
-        Packet<int> packet1(42);
-        Packet<int> packet2(0);
-        packet2.setSameAs(packet1);
-        assert(packet2.getData() == 42);
-        assert(packet2.getTimestamp() == packet1.getTimestamp());
-        cout << "Set Same As Method test passed!" << endl;
-    }
-
     static void testTimestamp() {
         Packet<int> packet1(42);
-        Packet<int> packet2(0);
-        packet2.setSameAs(packet1);
-        assert(packet1.getTimestamp() == packet2.getTimestamp());
+        Packet<int> packet2(42);
+        assert(packet1.getTimestamp() != packet2.getTimestamp());
         cout << "Timestamp test passed!" << endl;
     }
 

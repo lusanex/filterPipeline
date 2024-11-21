@@ -9,28 +9,23 @@
  * - The class is templated to hold any data type T, managing ownership 
  *   of dynamically allocated data.
  * - Includes a timestamp in microseconds since epoch, stored as a long long
- *   The timestamp methods ensures the each times a packet is set the timestamp
- *   is diferent.
- * - Implements the Rule of Five for proper memory management.
+ *   The timestamp methods ensure that each time a packet is created, the timestamp
+ *   is unique.
+ * - Implements the Rule of Five for proper memory management using smart pointers.
  */
 
-
-
-
-#include <memory> 
 #include <iostream>
 #include <string>
+#include <memory> // For std::unique_ptr
 #include <sys/time.h> 
 
-
 using namespace std;
-
 
 template <typename T>
 class Packet {
 private:
-    std::unique_ptr<T> data; // Unique ownership of the data
-    long long timestamp;
+    std::unique_ptr<T> data; // Smart pointer to the data
+    long long timestamp;     // Timestamp in microseconds since epoch
 
 public:
     // Default Constructor
@@ -68,28 +63,12 @@ public:
 
     // Getter for data
     const T& getData() const {
-        return *data;
+        return *data; // Dereference the smart pointer to get the data
     }
 
-    long long getTimestamp() const{
+    // Getter for timestamp
+    long long getTimestamp() const {
         return timestamp;
-    }
-
-    // Setter for data
-    template <typename U>
-    Packet<T>& set() {
-        data = std::make_unique<U>(); // Allocate new data
-        timestamp = currentTimestamp();
-        return *this;
-    }
-
-    // setSameAs: Copies the data and timestamp of the input packet
-    Packet<T>& setSameAs(const Packet<T>& packet) {
-        if (this != &packet) {
-            data = std::make_unique<T>(*packet.data); // Deep copy the data
-            timestamp = packet.timestamp;
-        }
-        return *this;
     }
 
     // Overload << operator for displaying the Packet
@@ -114,4 +93,5 @@ public:
     }
 };
 
-#endif
+#endif // PACKET_H
+

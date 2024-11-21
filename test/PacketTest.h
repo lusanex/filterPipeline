@@ -5,7 +5,9 @@
 #include <vector>
 
 using namespace std;
-long long PacketHolder::lastTimestamp = 0;
+
+template <typename T>
+long long Packet<T>::lastTimestamp = 0;
 
 class PacketTest {
 public:
@@ -20,7 +22,6 @@ public:
         testSetSameAsMethod();
         testTimestamp();
         testArrayOfPackets();
-        testContainer();
         cout << "All tests passed successfully!" << endl;
     }
 
@@ -114,43 +115,5 @@ private:
         **/
 
         cout << "Array of Packets test passed!" << endl;
-    }
-    static void testContainer() {
-        vector<PacketHolder*> container;
-
-        // Create and add packets of different types
-        auto stringPacket = new Packet<string>("Hello, Packet!");
-        auto intPacket = new Packet<int>(42);
-        auto doublePacket = new Packet<double>(3.14);
-
-        container.push_back(stringPacket);
-        container.push_back(intPacket);
-        container.push_back(doublePacket);
-
-        // Test retrieval of packets
-        auto retrievedStringPacket = dynamic_cast<Packet<string>*>(container[0]);
-        assert(retrievedStringPacket != nullptr);
-        assert(retrievedStringPacket->getData() == "Hello, Packet!");
-
-        auto retrievedIntPacket = dynamic_cast<Packet<int>*>(container[1]);
-        assert(retrievedIntPacket != nullptr);
-        assert(retrievedIntPacket->getData() == 42);
-
-        auto retrievedDoublePacket = dynamic_cast<Packet<double>*>(container[2]);
-        assert(retrievedDoublePacket != nullptr);
-        assert(retrievedDoublePacket->getData() == 3.14);
-
-        // Print the contents of the container
-        cout << "Contents of the container:" << endl;
-        for (const auto& packet : container) {
-            cout << packet << endl;
-        }
-
-        // Clean up dynamically allocated memory
-        for (auto& packet : container) {
-            delete packet;
-        }
-
-        container.clear();
     }
 };

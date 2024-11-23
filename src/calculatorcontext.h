@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include "calculatorexception.h"
 #include "port.h"
 #include "packet.h"
 
@@ -21,41 +22,50 @@ using namespace std;
 template <typename T>
 class CalculatorContext {
 private:
-    Port<T> inputs;                           // Input port for the calculator
-    Port<T> outputs;                          // Output port for the calculator
-    map<string, Packet<T>> sidePackets;       // Map for tagged packets (key: string, value: Packet<T>)
+    map<string,Port> inputs;            // Input port for the calculator
+    map<string,Port> outputs;           // Output port for the calculator    
+    map<string, Packet> sidePackets;    // sidePackets 
 
 public:
     // Default Constructor
-    CalculatorContext() {}
+    CalculatorContext() = delete;
 
-    // Getter for inputs port
-    Port<T>& getInputs() {
-        return inputs;
+    Port& getInputPort(const string& tag) {
+        auto it  = inputs.find(tag);
+        if(it == inputs.end()){
+            throw CalculatorException("No such tag input port: " + tag);
+        }
+        return it->second;
     }
 
     // Setter for inputs port
-    void setInputs(const Port<T>& inputPort) {
-        inputs = inputPort;
+    void setInputPacket(const string& tag,const Packet packet) {
+        Port &port = getInputPort(tag);
+        port.write(packet);
+    }
+
+    Packet popInputPacket(const string& tag){
+        Port& port = getInputPort(tag);
+        return port.read(); 
     }
 
     // Getter for outputs port
-    Port<T>& getOutputs() {
-        return outputs;
+    Port& getOutputPacket(string tag) {
     }
 
     // Setter for outputs port
-    void setOutputs(const Port<T>& outputPort) {
-        outputs = outputPort;
+    void setOutputPakcet(const string tag, Packet packet) {
+        //use the proivate getOutput and then set the   
     }
 
     // Add a side packet with a tag
-    void addSidePacket(const string& tag, const Packet<T>& packet) {
-        sidePackets[tag] = packet;
+    void addSidePacket(const string& tag, const Packet& packet) {
+        sidePackets[tag] = &packet;
     }
 
     // Retrieve a side packet by tag
-    Packet<T> getSidePacket(const string& tag) const {
+    // fix this i get a call to delte contructor of Packet
+    Packet getSidePacket(const string& tag) const {
         auto it = sidePackets.find(tag);
         if (it != sidePackets.end()) {
             return it->second;
@@ -64,23 +74,11 @@ public:
     }
 
     // Check if a side packet exists by tag
+    // similar contructor for inputs an doutps
     bool hasSidePacket(const string& tag) const {
         return sidePackets.find(tag) != sidePackets.end();
     }
 
-    // Remove a side packet by tag
-    void removeSidePacket(const string& tag) {
-        sidePackets.erase(tag);
-    }
-
-    // Get all tags in sidePackets
-    vector<string> getAllTags() const {
-        vector<string> tags;
-        for (const auto& pair : sidePackets) {
-            tags.push_back(pair.first);
-        }
-        return tags;
-    }
 };
 
 #endif // CALCULATOR_CONTEXT_H

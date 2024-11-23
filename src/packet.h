@@ -16,72 +16,114 @@
 
 #include <iostream>
 #include <string>
-#include <memory> // For std::unique_ptr
 #include <sys/time.h> 
+#include "packetholder.h"
+#include "packetexception.h"
 
 using namespace std;
 
-template <typename T>
+
+#include <memory>
+#include "packetholder.h"  // Include your PacketHolder classes
+
 class Packet {
 private:
-    std::unique_ptr<T> data; // Smart pointer to the data
+    unique_ptr<PacketHolderBase> holder;  // Polymorphic storage for any type
     long long timestamp;     // Timestamp in microseconds since epoch
 
 public:
-    // Default Constructor
-    Packet() : data(std::make_unique<T>()), timestamp(currentTimestamp()) {}
+    // Constructor accepting PacketHolder<T>
+    template <typename T>
+    explicit Packet(unique_ptr<PacketHolder<T>> packetHolder)
+    : holder(std::move(packetHolder)) , timestamp(currentTimestamp()){
 
-    // Parameterized Constructor
-    Packet(const T& value) : data(std::make_unique<T>(value)), timestamp(currentTimestamp()) {}
+    }
 
-    // Copy Constructor
-    Packet(const Packet<T>& other) : data(std::make_unique<T>(*other.data)), timestamp(other.timestamp) {}
+    Packet(){
+        holder = nullptr;
+        timestamp = Packet::kInvalidTimestamp;
+    }
 
-    // Move Constructor
-    Packet(Packet<T>&& other) noexcept : data(std::move(other.data)), timestamp(other.timestamp) {}
+    template <typename T>
+    Packet(const T value){
+        holder = make_unique<PacketHolder<T>>(PacketHolder(value));
+        timestamp  = currentTimestamp();
+    }
 
-    // Destructor
-    ~Packet() = default; // Smart pointer automatically handles memory cleanup
+    Packet(Packet&& other){
+        holder = std::move(other.holder);
+        timestamp = other.timestamp;
+        other.holder = nullptr;
+        other.timestamp = Packet::kInvalidTimestamp;
 
-    // Copy Assignment Operator
-    Packet<T>& operator=(const Packet<T>& other) {
-        if (this != &other) {
-            data = std::make_unique<T>(*other.data); // Deep copy
+    }
+
+
+    Packet& operator=(Packet&& other){
+        if ( this != &other ){
+            holder = std::move(other.holder);
             timestamp = other.timestamp;
+            other.holder = nullptr;
+            other.timestamp = Packet::kInvalidTimestamp;
         }
         return *this;
     }
 
-    // Move Assignment Operator
-    Packet<T>& operator=(Packet<T>&& other) noexcept {
-        if (this != &other) {
-            data = std::move(other.data); // Transfer ownership
-            timestamp = other.timestamp;
+    friend ostream& operator<<(ostream& os, const Packet& packet) {
+        os << "\nPacket : {"
+           << " timestamp: " << packet.timestamp << " }\n";
+        return os;
+    }
+
+    //this methods compares timestamp packet not data
+    //should be uses to compare datatimstamp of the packets
+    bool operator>(const Packet& other) const {
+        return (this->timestamp > other.timestamp);
+    }
+
+    bool operator<(const Packet& other) const{
+        return this->timestamp < other.timestamp;
+    }
+
+    bool operator==(const Packet& other) const {
+        return this->timestamp == other.timestamp;
+    }
+
+
+
+    bool isValid() const {
+        //cout << "timestap  " << timestamp  << endl;
+        //cout << "holder  " << holder << endl;
+        return timestamp != Packet::kInvalidTimestamp && holder != nullptr;
+    }
+
+
+    // Templated get<T> method to access data
+    template <typename T>
+    const T& get() {
+        if(!holder){
+            throw PacketException("Packet is empty");
         }
-        return *this;
+        // Downcast the base holder to the concrete type
+        auto typedHolder = dynamic_cast<PacketHolder<T>*>(holder.get());
+        
+        if (!typedHolder) {
+            throw PacketException("Invalid type access in Packet");
+        }
+        return typedHolder->get();
     }
 
-    // Getter for data
-    const T& getData() const {
-        return *data; // Dereference the smart pointer to get the data
-    }
-
-    // Getter for timestamp
     long long getTimestamp() const {
         return timestamp;
     }
 
-    // Overload << operator for displaying the Packet
-    friend std::ostream& operator<<(std::ostream& os, const Packet<T>& packet) {
-        os << "Packet { data: " << *packet.data
-           << ", timestamp: " << packet.timestamp << " }";
-        return os;
-    }
 
+
+public:
     static long long lastTimestamp;
+    static const long long kInvalidTimestamp = -11111111;
 
-    // Helper to get the current timestamp in microseconds
-    static long long currentTimestamp() {
+    long long currentTimestamp() {
         struct timeval tv;
         gettimeofday(&tv, nullptr);
         auto current = static_cast<long long>(tv.tv_sec) * 1000000LL + tv.tv_usec;
@@ -91,7 +133,11 @@ public:
         lastTimestamp = current;
         return current;
     }
+
+
+
 };
 
-#endif // PACKET_H
+#endif  // PACKET_H
+
 

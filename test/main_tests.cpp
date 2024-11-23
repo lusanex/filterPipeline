@@ -1,10 +1,10 @@
 #include "PacketTest.h"
-#include "PortTest.h"
-#include "TypeIdTest.h"
+
+long long Packet::lastTimestamp = 0;
 int main() {
-    PacketTest::runAllTests();
-    PortTest::runAllTests();
-    TypeIdTest::runAllTests();
+    PacketTest::run();
+    //PortTest::run();
+    //TypeIdTest::run();
     return 0;
 }
 

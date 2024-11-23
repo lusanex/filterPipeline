@@ -18,8 +18,13 @@ private:
 
 public:
     // Constructor to initialize the exception message
-    explicit PacketException(const std::string& msg) : std::runtime_error(message){}
+    explicit PacketException(const std::string& msg) : std::runtime_error(message){
+        message = msg;
+    }
 
+    const char* what() const noexcept override {
+        return message.c_str();
+    }
 };
 
 #endif // PORT_EXCEPTION_H

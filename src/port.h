@@ -3,8 +3,9 @@
 
 #include <queue>
 #include <string>
-#include "packet.h"
 #include "portexception.h"
+#include "packet.h"
+
 
 using namespace std;
 
@@ -20,10 +21,9 @@ using namespace std;
  */
 
 
-template <typename T>
 class Port {
     private:
-        queue<Packet<T>> dataQueue; //Queue for holding packets
+        queue<Packet> dataQueue; //Queue for holding packets
         long long latestTimestamp;  //Tracks the latest timestamp
         const size_t MAX_QUEUE_SIZE = 100;
 
@@ -32,9 +32,24 @@ class Port {
         Port(size_t maxQueueSize = 100)
         : latestTimestamp(0), MAX_QUEUE_SIZE(maxQueueSize) {}
 
+        Port(Port&& other)
+            : dataQueue(std::move(other.dataQueue)),
+            latestTimestamp(other.latestTimestamp){
+                other.latestTimestamp = 0;
+
+            }
+             
+        Port& operator=(Port&& other) {
+            if(this != &other){
+                dataQueue = std::move(other.dataQueue);
+                latestTimestamp = other.latestTimestamp;
+                other.latestTimestamp = 0;
+            }
+            return *this;
+        }
 
 
-        void write(const Packet<T>& packet) {
+        void write(const Packet& packet) {
             if(packet.getTimestamp() > latestTimestamp){
                 if(dataQueue.size() >= MAX_QUEUE_SIZE){
                     dataQueue.pop();
@@ -44,12 +59,12 @@ class Port {
             }
         }
         
-        Packet<T> read() {
+        Packet read() {
             if(dataQueue.empty()){
                 //Costum exception class
                 throw PortException("Port is empty") ;
             }
-            Packet<T> packet = dataQueue.front();
+            Packet packet = &dataQueue.front();
             dataQueue.pop();
             return packet;
         }

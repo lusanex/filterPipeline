@@ -3,8 +3,10 @@
 
 #include <queue>
 #include <string>
-#include "portexception.h"
 #include "packet.h"
+#include "portexception.h"
+
+
 
 
 using namespace std;
@@ -20,60 +22,61 @@ using namespace std;
  * - Includes a configurable MAX_SIZE to limit the size of the queue.
  */
 
-
 class Port {
-    private:
-        queue<Packet> dataQueue; //Queue for holding packets
-        long long latestTimestamp;  //Tracks the latest timestamp
-        const size_t MAX_QUEUE_SIZE = 100;
+private:
+    deque<Packet> dataQueue;  // Store Packet objects directly
+    long long latestTimestamp;
+    const size_t MAX_QUEUE_SIZE = 100;
 
-    public:
+public:
 
-        Port(size_t maxQueueSize = 100)
-        : latestTimestamp(0), MAX_QUEUE_SIZE(maxQueueSize) {}
+    Port(size_t maxQueueSize = 100)
+        : dataQueue(deque<Packet>()), latestTimestamp(0), MAX_QUEUE_SIZE(maxQueueSize) {}
 
-        Port(Port&& other)
-            : dataQueue(std::move(other.dataQueue)),
-            latestTimestamp(other.latestTimestamp){
-                other.latestTimestamp = 0;
 
-            }
-             
-        Port& operator=(Port&& other) {
-            if(this != &other){
-                dataQueue = std::move(other.dataQueue);
-                latestTimestamp = other.latestTimestamp;
-                other.latestTimestamp = 0;
-            }
-            return *this;
+
+    // Move constructor
+    Port(Port&& other)
+        : dataQueue(std::move(other.dataQueue)),
+          latestTimestamp(other.latestTimestamp) {
+        other.latestTimestamp = 0;
+    }
+
+    // Move assignment operator
+    Port& operator=(Port&& other) {
+        if (this != &other) {
+            dataQueue = std::move(other.dataQueue);
+            latestTimestamp = other.latestTimestamp;
+            other.latestTimestamp = 0;
         }
+        return *this;
+    }
 
-
-        void write(const Packet& packet) {
-            if(packet.getTimestamp() > latestTimestamp){
-                if(dataQueue.size() >= MAX_QUEUE_SIZE){
-                    dataQueue.pop();
-                }
-                dataQueue.push(packet);
-                latestTimestamp = packet.getTimestamp();
+    // Write a packet to the queue
+    void write(Packet&& packet) {
+        if (packet.getTimestamp() > latestTimestamp) {
+            if (dataQueue.size() >= MAX_QUEUE_SIZE) {
+                dataQueue.pop_front();  // Remove the oldest packet
             }
+            latestTimestamp = packet.getTimestamp();
+            dataQueue.push_back(std::move(packet));  // Move the packet into the queue
         }
-        
-        Packet read() {
-            if(dataQueue.empty()){
-                //Costum exception class
-                throw PortException("Port is empty") ;
-            }
-            Packet packet = &dataQueue.front();
-            dataQueue.pop();
-            return packet;
-        }
+    }
 
-        size_t size() const {
-            return dataQueue.size();
+    // Read a packet from the queue
+    Packet read() {
+        if (dataQueue.empty()) {
+            throw PortException("Queue is empty");
         }
+        Packet packet = std::move(dataQueue.front());  // Move the packet out
+        dataQueue.pop_front();
+        return packet;
+    }
 
-       
+    // Get the size of the queue
+    size_t size() const {
+        return dataQueue.size();
+    }
 };
 
 #endif

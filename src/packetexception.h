@@ -1,9 +1,10 @@
-#ifndef PORT_EXCEPTION_H
-#define PORT_EXCEPTION_H
+#ifndef PACKET_EXCEPTION_H
+#define PACKET_EXCEPTION_H
 
 #include <stdexcept>
 #include <string>
 
+using namespace std;
 /*
  * PacketException.h - A custom exception class for the PacketHolder class.
  * Author: Erich Gutierrez Chavez
@@ -12,13 +13,13 @@
  *   invalid data type
  */
 
-class PacketException : public std::runtime_error {
+class PacketException : public runtime_error {
 private:
-    std::string message;
+    string message;
 
 public:
     // Constructor to initialize the exception message
-    explicit PacketException(const std::string& msg) : std::runtime_error(message){
+    explicit PacketException(const string& msg) : runtime_error(message){
         message = msg;
     }
 
@@ -27,5 +28,5 @@ public:
     }
 };
 
-#endif // PORT_EXCEPTION_H
+#endif // PACKET_EXCEPTION_H
 

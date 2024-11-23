@@ -3,9 +3,9 @@
 
 #include <map>
 #include <string>
-#include "calculatorexception.h"
 #include "port.h"
 #include "packet.h"
+#include "calculatorexception.h"
 
 /*
  * CalculatorContext.h - A context class for calculators
@@ -13,72 +13,93 @@
  * Project: Calculator Framework
  * Description:
  * - Holds input, output, and side packets for a calculator.
- * - Side packets use a map for storing and retrieving tagged packets.
- * - Provides getter and setter methods for accessing and modifying ports and side packets.
+ * - Allows adding ports dynamically without overwriting existing ports.
+ * - Users can access but not modify ports once added.
+ * - Manages side packets with standard map operations.
  */
 
 using namespace std;
 
-template <typename T>
 class CalculatorContext {
 private:
-    map<string,Port> inputs;            // Input port for the calculator
-    map<string,Port> outputs;           // Output port for the calculator    
-    map<string, Packet> sidePackets;    // sidePackets 
+    map<string, Port> inputs;            // Input ports
+    map<string, Port> outputs;           // Output ports
+    map<string, Packet> sidePackets;     // Side packets
 
 public:
-    // Default Constructor
-    CalculatorContext() = delete;
 
-    Port& getInputPort(const string& tag) {
-        auto it  = inputs.find(tag);
-        if(it == inputs.end()){
-            throw CalculatorException("No such tag input port: " + tag);
+    CalculatorContext() {
+        inputs = map<string, Port>();
+        outputs = map<string, Port>();
+        sidePackets = map<string, Packet>();
+    }
+
+    // Add a new input port by tag
+    void addInputPort(const string& tag, Port&& port) {
+        if (inputs.find(tag) == inputs.end()) {
+            inputs[tag] = std::move(port);  
+        }
+    }
+
+    // Add a new output port by tag
+    void addOutputPort(const string& tag, Port&& port) {
+        if (outputs.find(tag) == outputs.end()) {
+            outputs[tag] = std::move(port);  // Add only if the tag doesn't exist
+        }
+
+    }
+
+    // Access input port by tag
+    Port& getInputs(const string& tag) {
+        auto it = inputs.find(tag);
+        if (it == inputs.end()) {
+            throw CalculatorException("No such input port: " + tag);
         }
         return it->second;
     }
 
-    // Setter for inputs port
-    void setInputPacket(const string& tag,const Packet packet) {
-        Port &port = getInputPort(tag);
-        port.write(packet);
-    }
-
-    Packet popInputPacket(const string& tag){
-        Port& port = getInputPort(tag);
-        return port.read(); 
-    }
-
-    // Getter for outputs port
-    Port& getOutputPacket(string tag) {
-    }
-
-    // Setter for outputs port
-    void setOutputPakcet(const string tag, Packet packet) {
-        //use the proivate getOutput and then set the   
-    }
-
-    // Add a side packet with a tag
-    void addSidePacket(const string& tag, const Packet& packet) {
-        sidePackets[tag] = &packet;
-    }
-
-    // Retrieve a side packet by tag
-    // fix this i get a call to delte contructor of Packet
-    Packet getSidePacket(const string& tag) const {
-        auto it = sidePackets.find(tag);
-        if (it != sidePackets.end()) {
-            return it->second;
+    // Access output port by tag
+    Port& getOutputs(const string& tag) {
+        auto it = outputs.find(tag);
+        if (it == outputs.end()) {
+            throw CalculatorException("No such output port: " + tag);
         }
-        throw runtime_error("Side packet with tag '" + tag + "' not found.");
+        return it->second;
     }
 
-    // Check if a side packet exists by tag
-    // similar contructor for inputs an doutps
+    // Access side packet by tag
+    Packet& getSidePacket(const string& tag) {
+        auto it = sidePackets.find(tag);
+        if (it == sidePackets.end()) {
+            throw CalculatorException("No such side packet: " + tag);
+        }
+        return it->second;
+    }
+
+    // Add a new side packet
+    void addSidePacket(const string& tag, Packet& packet) {
+        sidePackets[tag] = std::move(packet);  // Overwrite existing side packets if tag exists
+    }
+
+    // Check if an input port exists
+    bool hasInput(const string& tag) const {
+        return inputs.find(tag) != inputs.end();
+    }
+
+    // Check if an output port exists
+    bool hasOutput(const string& tag) const {
+        return outputs.find(tag) != outputs.end();
+    }
+
+    // Check if a side packet exists
     bool hasSidePacket(const string& tag) const {
         return sidePackets.find(tag) != sidePackets.end();
     }
 
+    // Remove a side packet by tag
+    void removeSidePacket(const string& tag) {
+        sidePackets.erase(tag);
+    }
 };
 
 #endif // CALCULATOR_CONTEXT_H

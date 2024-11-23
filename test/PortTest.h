@@ -11,22 +11,33 @@ using namespace std;
 
 class PortTest {
 public:
-    static void runAllTests() {
+    static void run() {
         testPushAndReadIntegerPackets();
         testPushAndReadStringPackets();
+        testDefaultConstructor();
         cout << "All Port tests passed successfully!" << endl;
     }
 
 private:
+
+    static void testDefaultConstructor(){
+        Port port;
+        assert(port.size() == 0);
+        auto expectedValue = 12;
+        port.write(std::move(Packet(expectedValue)));
+        assert(port.size() == 1);
+        assert(port.read().get<int>() == expectedValue );
+        cout << "Test default constructor PASSED" << endl;
+    }
     // Test pushing and reading integer packets
     static void testPushAndReadIntegerPackets() {
-        Port<int> port;
+        Port port;
 
 
         // Push 25 packets containing integers
         for (int i = 1; i <= 25; i++) {
-            Packet<int> packet(i); // Packet with data i
-            port.write(packet);
+            Packet packet(i); // Packet with data i
+            port.write(std::move(packet));
         }
 
         // Ensure the queue size is 25
@@ -35,8 +46,8 @@ private:
 
         // Read and verify packets
         for (int i = 1; i <= 25; i++) {
-            Packet<int> packet = port.read();
-            assert(packet.getData() == i); // Data should match what was pushed
+            Packet packet = port.read();
+            assert(packet.get<int>() == i); // Data should match what was pushed
         }
 
         // Ensure the queue is empty after reading
@@ -47,7 +58,7 @@ private:
 
     // Test pushing and reading string packets
     static void testPushAndReadStringPackets() {
-        Port<string> port;
+        Port port;
 
         // Array of test strings
         vector<string> testStrings = {
@@ -58,8 +69,8 @@ private:
 
         // Push 25 packets containing strings
         for (const string& name : testStrings) {
-            Packet<string> packet(name);
-            port.write(packet);
+            Packet packet(name);
+            port.write(std::move(packet));
         }
 
         // Ensure the queue size is 25
@@ -67,8 +78,8 @@ private:
 
         // Read and verify packets
         for (const string& expectedName : testStrings) {
-            Packet<string> packet = port.read();
-            assert(packet.getData() == expectedName); // Data should match what was pushed
+            Packet packet = port.read();
+            assert(packet.get<string>() == expectedName); // Data should match what was pushed
         }
 
         // Ensure the queue is empty after reading

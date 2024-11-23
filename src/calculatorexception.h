@@ -1,5 +1,5 @@
-#ifndef PORT_EXCEPTION_H
-#define PORT_EXCEPTION_H
+#ifndef CALCULATOR_CONTEXT_EXCEPTION_H
+#define CALCULATOR_CONTEXT_EXCEPTION_H
 
 #include <exception>
 #include <string>
@@ -26,5 +26,4 @@ public:
     }
 };
 
-#endif // PORT_EXCEPTION_H
-
+#endif // CALCULATOR_CONTEXT_EXCEPTION_H

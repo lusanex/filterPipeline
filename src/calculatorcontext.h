@@ -50,25 +50,25 @@ public:
     }
 
     // Access input port by tag
-    Port& getInputs(const string& tag) {
+    Port* const getInputs(const string& tag) {
         auto it = inputs.find(tag);
         if (it == inputs.end()) {
             throw CalculatorException("No such input port: " + tag);
         }
-        return it->second;
+        return &(it->second);
     }
 
     // Access output port by tag
-    Port& getOutputs(const string& tag) {
+    Port* const getOutputs(const string& tag) {
         auto it = outputs.find(tag);
         if (it == outputs.end()) {
             throw CalculatorException("No such output port: " + tag);
         }
-        return it->second;
+        return &(it->second);
     }
 
     // Access side packet by tag
-    Packet& getSidePacket(const string& tag) {
+    const Packet& getSidePacket(const string& tag) {
         auto it = sidePackets.find(tag);
         if (it == sidePackets.end()) {
             throw CalculatorException("No such side packet: " + tag);

@@ -46,7 +46,7 @@ public:
 
     template <typename T>
     Packet(const T value){
-        holder = make_unique<PacketHolder<T>>(PacketHolder(value));
+        holder = make_unique<PacketHolder<T>>(PacketHolder<T>(value));
         timestamp  = currentTimestamp();
     }
 
@@ -100,7 +100,7 @@ public:
 
     // Templated get<T> method to access data
     template <typename T>
-    const T& get() {
+    const T& get() const{
         if(!holder){
             throw PacketException("Packet is empty");
         }
@@ -118,7 +118,18 @@ public:
     }
 
 
-
+    template <typename T>
+    T& get() {
+        if (!holder) {
+            throw PacketException("Packet is empty");
+        }
+        auto typedHolder = dynamic_cast<PacketHolder<T>*>(holder.get());
+        if (!typedHolder) {
+            throw PacketException("Invalid type access in Packet");
+        }
+        return typedHolder->get(); 
+    }
+      
 public:
     static long long lastTimestamp;
     static const long long kInvalidTimestamp = -11111111;

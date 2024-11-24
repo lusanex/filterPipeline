@@ -75,6 +75,10 @@ public:
         return *data;
     }
 
+    T& get() {
+        return *data;
+    }
+
 
 };
 

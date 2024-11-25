@@ -66,12 +66,20 @@ public:
     // Read a packet from the queue
     Packet read() {
         if (dataQueue.empty()) {
-            throw PortException("Queue is empty");
+            throw PortException("Port read: Queue is empty");
         }
         Packet packet = std::move(dataQueue.front());  // Move the packet out
         dataQueue.pop_front();
         return packet;
     }
+
+
+    bool operator==(const Port& other){
+        if (dataQueue == other.dataQueue) return true;
+        if (dataQueue.size() != other.dataQueue.size()) return false;
+        return false;
+    }
+        
 
     // Get the size of the queue
     size_t size() const {

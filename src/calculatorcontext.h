@@ -22,64 +22,101 @@ using namespace std;
 
 class CalculatorContext {
 private:
-    map<string, Port> inputs;            // Input ports
-    map<string, Port> outputs;           // Output ports
-    map<string, Packet> sidePackets;     // Side packets
+    map<string, shared_ptr<Port>> inputs;            // Input ports
+    map<string, shared_ptr<Port>> outputs;           // Output ports
+    const shared_ptr<map<string, Packet>> sidePackets;     // Side packets
 
 public:
 
     CalculatorContext() {
-        inputs = map<string, Port>();
-        outputs = map<string, Port>();
-        sidePackets = map<string, Packet>();
+        inputs = map<string, shared_ptr<Port>>();
+        outputs = map<string, shared_ptr<Port>>();
     }
+
+    CalculatorContext(const shared_ptr<map<string,Packet>>& newSidePacket)
+    :sidePackets(newSidePacket)
+    {
+        inputs = map<string, shared_ptr<Port>>();
+        outputs = map<string, shared_ptr<Port>>();
+    }
+
 
     // Add a new input port by tag
     void addInputPort(const string& tag, Port&& port) {
         if (inputs.find(tag) == inputs.end()) {
-            inputs[tag] = std::move(port);  
+            inputs[tag] = make_shared<Port>(std::move(port));
         }
     }
+
 
     // Add a new output port by tag
     void addOutputPort(const string& tag, Port&& port) {
         if (outputs.find(tag) == outputs.end()) {
-            outputs[tag] = std::move(port);  // Add only if the tag doesn't exist
+            outputs[tag] = make_shared<Port>(std::move(port));  
         }
 
     }
 
+    //Bind an input port by tag (shared ref)
+    void bindInputPort(const string& tag, Port& port){
+        inputs[tag] = shared_ptr<Port>(&port,[](Port*){});
+    }
+    //Bind an output port by tag (shared ref)
+    void bindOutputPort(const string& tag, Port& port){
+        outputs[tag] = shared_ptr<Port>(&port,[](Port*){});
+    }
+
+ 
+
     // Access input port by tag
-    Port* const getInputs(const string& tag) {
+    Port& getInputPort(const string& tag) {
         auto it = inputs.find(tag);
         if (it == inputs.end()) {
             throw CalculatorException("No such input port: " + tag);
         }
-        return &(it->second);
+        return *(it->second);
     }
 
+
     // Access output port by tag
-    Port* const getOutputs(const string& tag) {
+    Port& getOutputPort(const string& tag) {
         auto it = outputs.find(tag);
         if (it == outputs.end()) {
             throw CalculatorException("No such output port: " + tag);
         }
-        return &(it->second);
+        return *(it->second);
     }
 
     // Access side packet by tag
-    const Packet& getSidePacket(const string& tag) {
-        auto it = sidePackets.find(tag);
-        if (it == sidePackets.end()) {
+    const Packet& getSidePacket(const string& tag) const{
+        auto it = sidePackets->find(tag);
+        if (it == sidePackets->end()) {
             throw CalculatorException("No such side packet: " + tag);
         }
         return it->second;
     }
 
-    // Add a new side packet
-    void addSidePacket(const string& tag, Packet& packet) {
-        sidePackets[tag] = std::move(packet);  // Overwrite existing side packets if tag exists
+     vector<string> getInputPortTags() const {
+        vector<string> names;
+        for (map<string, shared_ptr<Port>>::const_iterator it = inputs.begin(); it != inputs.end(); ++it) {
+            names.push_back(it->first);
+        }
+        return names;
     }
+
+    // Get names of all output ports
+    vector<string> getOutputPortTags() const {
+        vector<string> names;
+        for (map<string, shared_ptr<Port>>::const_iterator it = outputs.begin(); it != outputs.end(); ++it) {
+            names.push_back(it->first);
+        }
+        return names;
+    }
+
+    // Add a new side packet
+    //void addSidePacket(const string& tag, Packet&& packet) {
+    //    sidePackets[tag] = make_unique<Packet>(std::move(packet));  
+    //}
 
     // Check if an input port exists
     bool hasInput(const string& tag) const {
@@ -93,13 +130,9 @@ public:
 
     // Check if a side packet exists
     bool hasSidePacket(const string& tag) const {
-        return sidePackets.find(tag) != sidePackets.end();
+        return sidePackets->find(tag) != sidePackets->end();
     }
 
-    // Remove a side packet by tag
-    void removeSidePacket(const string& tag) {
-        sidePackets.erase(tag);
-    }
 };
 
 #endif // CALCULATOR_CONTEXT_H

@@ -12,6 +12,7 @@ using namespace std;
 class PortTest {
 public:
     static void run() {
+        cout << "Testing PortTest class" << endl;
         testPushAndReadIntegerPackets();
         testPushAndReadStringPackets();
         testDefaultConstructor();

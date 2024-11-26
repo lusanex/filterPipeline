@@ -33,17 +33,14 @@ public:
 
     void enter(CalculatorContext* cc, float delta) override {
         assert(cc->hasInput(kTagInput) && "Calculator1 requires kTagInput");
-        cout << "[Calculator1] Delta Time: " << delta << " seconds\n";
-        cout << "[Calculator1] Input Tags: ";
-        for (const string& tag : cc->getInputPortTags()) {
-            cout << tag << " ";
-        }
-        cout << "\n";
-        cout << "[Calculator1] Output Tags: ";
-        for (const string& tag : cc->getOutputPortTags()) {
-            cout << tag << " ";
-        }
-        cout << "\n";
+        //cout << "[Calculator1] Delta Time: " << delta << " seconds\n";
+        //cout << "[Calculator1] Input Tags: ";
+        assert(cc->getInputPortTags().size() > 0);
+        //cout << "\n";
+        //cout << "[Calculator1] Output Tags: ";
+        assert(cc->getOutputPortTags().size() > 0 && "output port should be > 0");
+            //cout << tag << " ";
+        //cout << "\n";
     }
 
     void process(CalculatorContext* cc, float delta) override { 
@@ -55,11 +52,11 @@ public:
 
 
             Packet p = port.read();
-            cout << "[Calculator1 ] p.get<> " << p.get<int>() << endl;
+            //cout << "[Calculator1 ] p.get<> " << p.get<int>() << endl;
             p.get<int>() += 1;
 
             cc->getOutputPort(kCalc1Tag).write(std::move(p));
-            cout << "Pussing packet to output port  " << getName() << endl;
+            //cout << "Pushing packets to output port  " << getName() << endl;
             current_index++;
         }
 
@@ -87,30 +84,32 @@ public:
 
     void enter(CalculatorContext* cc, float delta) override {
         assert(cc->hasOutput(kTagOutput) && "Calculator2 requires kTagOutput");
-        cout << "[Calculator2] Delta Time: " << delta << " seconds\n";
-        cout << "[Calculator2] Input Tags: ";
+        //cout << "[Calculator2] Delta Time: " << delta << " seconds\n";
+        //cout << "[Calculator2] Input Tags: ";
+        /**
         for (const string& tag : cc->getInputPortTags()) {
-            cout << tag << " ";
+            //cout << tag << " ";
         }
-        cout << "\n";
-        cout << "[Calculator2] Output Tags: ";
+        //cout << "\n";
+        //cout << "[Calculator2] Output Tags: ";
         for (const string& tag : cc->getOutputPortTags()) {
-            cout << tag << " ";
+            //cout << tag << " ";
         }
-        cout << "\n";
+        **/
+        //cout << "\n";
     }
 
     void process(CalculatorContext* cc, float delta) override {
 
         if ( current_index < kNumberOfPacketsToPush ){
-            cout << "Pussing packet to output port "  << getName() << endl;
+            //cout << "Pussing packet to output port "  << getName() << endl;
             //we should foward the packet calculator1 has update the data
             Port& port = cc->getInputPort(kCalc1Tag);
             if ( port.size() == 0 ) return;
 
-            cout << "inpurt port tag " << kCalc1Tag << " size : " << port.size() << endl;
+           // cout << "inpurt port tag " << kCalc1Tag << " size : " << port.size() << endl;
             Packet p = port.read();
-            cout << p << endl;
+            //cout << p << endl;
             cc->getOutputPort(kTagOutput).write(std::move(p));
             current_index++;
         }

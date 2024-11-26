@@ -149,14 +149,14 @@ public:
         if (!running){
             running = true;
             startTimeScheduler= getCurrentTime();
-            cout << "Starting time sche " << startTimeFrame << endl;
+            //cout << "Starting time sche " << startTimeFrame << endl;
         }
 
-        cout << "Last start time frame "  << startTimeFrame << endl;
+        //cout << "Last start time frame "  << startTimeFrame << endl;
         float delta = calculateDeltaTime(startTimeFrame);
-        cout << "Delta time : " << delta << endl;
+        //cout << "Delta time : " << delta << endl;
         startTimeFrame = getCurrentTime(); 
-        cout << "Current start time frame " << startTimeFrame << endl;
+        //cout << "Current start time frame " << startTimeFrame << endl;
 
         while (running) {
 
@@ -174,11 +174,11 @@ public:
 
             // Frame duration enforcement
             unsigned long long  endTimeFrame = getCurrentTime();
-            cout << "endTimeFrame : " << endTimeFrame << endl;
+            //cout << "endTimeFrame : " << endTimeFrame << endl;
             unsigned long long  elapsedTimeFrame = endTimeFrame - startTimeFrame;
 
             if (elapsedTimeFrame >= FRAME_RATE_MS) {
-                cout << "One frame elapse " << elapsedTimeFrame << endl;
+                //cout << "One frame elapse " << elapsedTimeFrame << endl;
                 current_index = (current_index + 1) % calculators.size();
                 return;
             }

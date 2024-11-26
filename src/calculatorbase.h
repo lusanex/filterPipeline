@@ -6,6 +6,7 @@
 
 using namespace std;
 
+
 class CalculatorBase{
     protected:
         string name;

@@ -40,14 +40,14 @@ private:
 
     static void testReadAndWriteReaderUtilImage() {
         cout << "\nTesting image reader and writer " << endl;
-        Image img = ImageUtils::imageReader("test_1_bit.bmp");
+        Image img = ImageUtils::imageReader("assets/test_24_bit.bmp");
         assert(img.isImageValid() && "Image should be valid");
         assert(img.getColorTable().empty() && "Color table should not be empty");
         assert(!img.getData().empty() && "Data should not be empty");
         assert(img.getData().size() == img.getHeight() * img.getStride() && "Data should be equal to heigh * stride");
         cout << "Testing image writer " << endl;
 
-        ImageUtils::imageWriter("output_test1bit.bmp",img);
+        ImageUtils::imageWriter("out/copy_24_bit.bmp",img);
 
         cout << "Test image reader and writer PASSED " << endl;
         

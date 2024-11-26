@@ -25,6 +25,11 @@ private:
     map<string, shared_ptr<Port>> inputs;            // Input ports
     map<string, shared_ptr<Port>> outputs;           // Output ports
     const shared_ptr<map<string, Packet>> sidePackets;     // Side packets
+                                                           //
+public:
+    const string kTagInput = "kTagInput"; 
+    const string kTagOutput = "kTagOutput"; 
+
 
 public:
 

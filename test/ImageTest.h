@@ -115,6 +115,7 @@ private:
 
         cout << "Invalid image test PASSED!" << endl;
     }
+
 };
 
 #endif // IMAGE_TEST_H

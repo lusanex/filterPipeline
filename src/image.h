@@ -40,8 +40,6 @@ private:
     int32_t stride;
     shared_ptr<vector<uint8_t>> buffer;
     bool isValid;
-    shared_ptr<vector<uint8_t>> colorTable;
-    vector<uint8_t> header;
 
 
    
@@ -72,15 +70,13 @@ public:
 
     ~Image() { buffer.reset(); }
     // Constructor without data
-    Image(int32_t width, int32_t height, PixelFormat format, vector<uint8_t> header = {})
+    Image(int32_t width, int32_t height, PixelFormat format)
         : width(width),
           height(height),
           format(format),
           stride(width * bytesPerStride(bitsPerPixel(format))),
-          buffer(make_shared<vector<uint8_t>>(height * stride, 0)),
-          isValid(false),
-          colorTable(make_shared<vector<uint8_t>>()),
-          header(header)
+          buffer(make_shared<vector<uint8_t>>()),
+          isValid(false)
         { 
         if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN) {
             throw ImageException("Invalid image dimensions or format");
@@ -89,38 +85,39 @@ public:
 
     // Constructor with data (copy)
     Image(int32_t width, int32_t height, PixelFormat format,
-          int32_t stride, const vector<uint8_t>& data,const vector<uint8_t>& colorTable, vector<uint8_t> header = {})
+          vector<uint8_t>& data)
         : width(width),
           height(height),
           format(format),
-          stride(stride),
+          stride(width * bytesPerStride(bitsPerPixel(format))),
           buffer(make_shared<vector<uint8_t>>(data.begin(), data.end())),
-          isValid(true),
-          colorTable(make_shared<vector<uint8_t>>(colorTable.begin(),colorTable.end())),
-          header(vector<uint8_t>(header.begin(), header.end()))
-
+          isValid(true)
         {
-        if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN || 
-            data.size() != static_cast<size_t>(height * stride)) {
-            throw ImageException("Invalid image dimensions, format, or data size");
+
+        cout << "w " << width << " h: " << height << " f : " << static_cast<int>(format);
+        if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN ) {
+
+            throw ImageException("Constructor Invaidl image dimensions, format, or data size");
         }
+
     }
 
     // Constructor with data (move)
     Image(int32_t width, int32_t height, PixelFormat format,
-          int32_t stride, vector<uint8_t>&& data, vector<uint8_t>&& colorTable = {}, vector<uint8_t>&& header = {})
+          int32_t stride, vector<uint8_t>&& data)
         : width(width),
           height(height),
           format(format),
           stride(stride),
           buffer(make_shared<vector<uint8_t>>(std::move(data))),
-          isValid(true),
-          colorTable(make_shared<vector<uint8_t>>(std::move(colorTable))),
-          header(vector<uint8_t>(std::move(header)))
+          isValid(true)
           {
 
+
+            cout << "w " << width << " h: " << height << " f : " << static_cast<int>(format);
             if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN || 
                 data.size() != static_cast<size_t>(height * stride)) {
+
                 throw ImageException("Invalid image dimensions, format, or data size");
             }
     }
@@ -132,36 +129,16 @@ public:
           format(other.format),
           stride(other.stride),
           buffer(other.buffer),
-          isValid(other.isValid),
-          colorTable(other.colorTable),
-          header(other.header){}
+          isValid(other.isValid) {}
 
-
-
-    // Clone Method
-    Image clone() const {
-        if (!isValid) {
-            throw ImageException("Cannot clone an invalid image");
-        }
-        return Image(width, height, format, stride, *buffer,*colorTable,header); // Deep copy of buffer
-    }
 
     // Accessors
     int32_t getWidth() const { return width; }
     int32_t getHeight() const { return height; }
     int32_t getStride() const { return stride; }
-    vector<uint8_t> getHeader() const { return header;}
     PixelFormat getFormat() const { return format; }
-    vector<uint8_t> getColorTable() const { return *colorTable; }
 
-    void setColorTable(vector<uint8_t>&& nColorTable){
-        colorTable.reset();
-        colorTable = make_shared<vector<uint8_t>>(std::move(nColorTable));
-    }
 
-    void setHeader(vector<uint8_t> nHeader) {
-        header = vector<uint8_t>(nHeader.begin(), nHeader.end());
-    }
     void setStride(int32_t newStride) { stride = newStride; };
     void setFormat(PixelFormat newFormat){
         format = newFormat; 
@@ -194,6 +171,10 @@ public:
     // Check Validity
     bool isImageValid() const { return isValid; }
 
+    uint32_t bytesPerLine() const {
+        return  (width * bitsPerPixel(format) + 7) / 8;
+    }
+
 private:   
 
     uint32_t bytesPerStride(uint32_t bitsPerLine) const {
@@ -201,8 +182,10 @@ private:
     }
 
     uint32_t bytesPerLine(uint32_t bitsPerLine){
-        return ((bitsPerLine + 7) / 8);
+        return ((bitsPerLine +7) / 8);
     }
+
+
 
 
 };

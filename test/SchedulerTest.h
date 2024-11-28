@@ -25,9 +25,10 @@ class Calculator1 : public CalculatorBase {
 public:
     Calculator1() : CalculatorBase("Calculator1") {}
 
-    unique_ptr<CalculatorContext> registerContext() override {
-        unique_ptr<CalculatorContext> context = make_unique<CalculatorContext>();
+    unique_ptr<CalculatorContext> registerContext(const shared_ptr<map<string,Packet>>& newSidePacket = make_shared<map<string,Packet>>()) override {
+        unique_ptr<CalculatorContext> context = make_unique<CalculatorContext>(newSidePacket);
         context->addOutputPort( kCalc1Tag,Port());
+
         return context;
     }
 
@@ -75,8 +76,8 @@ class Calculator2 : public CalculatorBase {
 public:
     Calculator2() : CalculatorBase("Calculator2") {}
 
-    unique_ptr<CalculatorContext> registerContext() override {
-        auto context = make_unique<CalculatorContext>();
+    unique_ptr<CalculatorContext> registerContext(const shared_ptr<map<string,Packet>>& newSidePacket = make_shared<map<string,Packet>>()) override {
+        auto context = make_unique<CalculatorContext>(newSidePacket);
         context->addInputPort(kCalc2Tag, Port());
         context->addOutputPort(kTagOutput, Port());
         return context;

@@ -75,9 +75,9 @@ public:
      * Registers a calculator and its context.
      * @param calculator The calculator to register.
      */
-    void registerCalculator(CalculatorBase* calculator) {
+    void registerCalculator(CalculatorBase* calculator,const shared_ptr<map<string,Packet>>& newSidePacket = make_shared<map<string,Packet>>()) {
         calculators.push_back(unique_ptr<CalculatorBase>(calculator));
-        unique_ptr<CalculatorContext> context = calculator->registerContext();
+        unique_ptr<CalculatorContext> context = calculator->registerContext(newSidePacket);
         contexts[calculator->getName()] = std::move(context);
     }
 

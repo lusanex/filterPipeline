@@ -1,25 +1,29 @@
-#ifndef GRAYSCALE_CALCULATOR_H
-#define GRAY
+#ifndef PIXEL_SHAPE_CALCULATOR_H
+#define PIXEL_SHAPE_CALCULATOR_H
 
 #include "calculatorbase.h"
 #include "image.h"
 #include "imageutils.h"
 #include <sstream>
+#include <cmath>
 #include <cassert>
 
-class GrayscaleCalculator : public CalculatorBase {
+class PixelShapeCalculator : public CalculatorBase {
 private:
+    const string kOutputPixel = "ImagePixel";
     const string kOutputGrayscale = "ImageGrayscale";
-    const string kOutputDither = "ImageDither";
+    const string kPixelSize = "pixelSize";
+    const string kImageSizeX = "imageSizeX";
+    const string kImageSizeY = "imageSizeY";
 
 
 public:
-    GrayscaleCalculator() : CalculatorBase("GrayscaleCalculator") {}
+    PixelShapeCalculator() : CalculatorBase("PixelShapeCalculator") {}
 
     // Register input/output ports
     unique_ptr<CalculatorContext> registerContext(const shared_ptr<map<string,Packet>>& newSidePacket = make_shared<map<string,Packet>>()) override {
         auto context = make_unique<CalculatorContext>(newSidePacket);
-        context->addOutputPort(kOutputGrayscale, Port()); 
+        context->addOutputPort(kOutputPixel, Port()); 
         return context;
     }
 
@@ -31,7 +35,9 @@ public:
     // Process method: Perform the grayscale transformation
     void process(CalculatorContext* cc, float delta) override {
         //cout << "CALCULATOR  " << endl;
-        Port& inputPort = cc->getInputPort(kOutputDither);
+        //Port& inputPort = cc->getInputPort(kOutputGrayscale);
+
+        Port& inputPort = cc->getInputPort(cc->kTagInput);
 
         // Check if there is data in the input port
         if (inputPort.size() == 0) return;
@@ -39,6 +45,10 @@ public:
         // Read the input packet
         Packet inputPacket = inputPort.read();
         Image outputImage = inputPacket.get<Image>();
+        int pixSizeFilter = cc->getSidePacket(kPixelSize).get<int>();
+        int imageSizeX = cc->getSidePacket(kImageSizeX).get<int>();
+        int imageSizeY = cc->getSidePacket(kImageSizeY).get<int>();
+
 
         // Create a new image for the output
         //Image outputImage = inputImage.clone(); // Clone the input image
@@ -65,37 +75,43 @@ public:
         for ( size_t i = 0 ; i < dataSize; i += pixelSize ){
             size_t row = i / realStride;
             //cout << "i " << i << " row " << row << endl;
-            if ( row > height ) break;
-            uint8_t blue = pixelData[i];
-            uint8_t green = pixelData[i+1];
-            uint8_t red = pixelData[i+2];
-            uint8_t alpha = pixelData[i+3];
+            size_t col = (i % realStride) / pixelSize;
 
-            uint8_t gray = static_cast<uint8_t>(
-                        0.299 * blue +
-                        0.587 * green +
-                        0.114 * red
-                    );
+
+            if ( row > height ) break;
+
+
+            size_t pixelatedUV[2] { row,col };
+            size_t uv[2] {row,col}; 
+            int imageSize[2] { imageSizeX,imageSizeY };
+            getSquareUV(pixelatedUV,pixelSize,imageSize);
+
+            size_t newRow = pixelatedUV[0];
+            size_t newCol = pixelatedUV[1];
+            size_t newIndex = (newRow * realStride) + (newCol * pixelSize);
+
+            uint8_t blue = pixelData[newIndex];
+            uint8_t green = pixelData[newIndex+1];
+            uint8_t red = pixelData[newIndex+2];
+            uint8_t alpha = pixelData[newIndex+3];
+
             //cout << "gray " << static_cast<int>(gray) << endl;
             //cout << " alpha " << static_cast<int>(alpha) << endl;
 
-            uint8_t temp = blue;
-            blue = red;
-            red = temp;
-            pixelData[i] = gray;       
-            pixelData[i + 1] = gray;   
-            pixelData[i + 2] = gray;   
+            pixelData[i] = blue;       
+            pixelData[i + 1] = green;   
+            pixelData[i + 2] = red;   
             pixelData[i + 3] = alpha;
         }
 
         // Leave alpha channel (if present) unchanged
 
         ostringstream error;
-        Image outGray = outputImage.clone();
+        Image outPixel = outputImage.clone();
         error << "Output port should be " << cc->kTagOutput << endl;
-        //assert(cc->hasOutput(cc->kTagOutput) && error.str().c_str());
-        //cc->getOutputPort(cc->kTagOutput).write(Packet(std::move(outputImage)));
-        cc->getOutputPort(kOutputGrayscale).write(Packet(std::move(outGray)));
+        assert(cc->hasOutput(cc->kTagOutput) && error.str().c_str());
+        cc->getOutputPort(cc->kTagOutput).write(Packet(std::move(outputImage)));
+        cc->getOutputPort(kOutputPixel).write(Packet(std::move(outPixel)));
 
         //cout <<  "CALCULATOR END " << endl;
 
@@ -103,6 +119,17 @@ public:
 
     // Close method (cleanup if needed)
     void close(CalculatorContext* cc, float delta) override {}
+
+
+    void getSquareUV(size_t uv[2], float pixelSize, int imageSize[2]){
+        uv[0] = floor(uv[0]/ pixelSize) * pixelSize / imageSize[0];
+        uv[1] = floor(uv[1]/pixelSize) * pixelSize / imageSize[1];
+    }
+    
+
+       
+
+    
 };
 
 #endif

@@ -53,7 +53,7 @@ private:
         
     }
     static void testLoadReadBlueImage() {
-        const string imagePath = "assets/character.bmp";
+        const string imagePath = "assets/lena_color.bmp";
         cout << "Running test for image: " << imagePath << endl;
 
         // Step 1: Read the image

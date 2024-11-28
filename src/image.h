@@ -131,6 +131,13 @@ public:
           buffer(other.buffer),
           isValid(other.isValid) {}
 
+    Image clone() const {
+        if(!isValid){
+            throw ImageException("Cannot clone an invalid image");
+        }
+        return Image(width,height,format,*buffer);
+    }
+
 
     // Accessors
     int32_t getWidth() const { return width; }

@@ -123,6 +123,7 @@ public:
 
         // Read BMP info header
         file.read(reinterpret_cast<char *>(&infoHeader), sizeof(infoHeader));
+        printBMPHeaders(fileHeader,infoHeader);
 
         // Handle 32-bit BMPs with color masks
         if (infoHeader.bit_count == 32) {
@@ -185,9 +186,13 @@ public:
 
         // Populate headers based on the Image object
         fileHeader.file_type = 0x4D42;
+        infoHeader.compression = 0;
         fileHeader.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
         if (image.getFormat() == PixelFormat::RGBA32) {
+            infoHeader.size = sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
             fileHeader.offset_data += sizeof(BMPColorHeader);
+            infoHeader.compression = 3;
+            fileHeader.file_size = fileHeader.offset_data + static_cast<uint32_t>(image.getData().size());
         }
         fileHeader.file_size = fileHeader.offset_data + image.getData().size();
 
@@ -196,7 +201,6 @@ public:
         infoHeader.height = image.getHeight();
         infoHeader.planes = 1;
         infoHeader.bit_count = image.getFormat() == PixelFormat::RGBA32 ? 32 : 24;
-        infoHeader.compression = 0;
         infoHeader.size_image = static_cast<uint32_t>(image.getData().size());
 
         if (image.getFormat() == PixelFormat::RGBA32) {
@@ -240,7 +244,42 @@ private:
         return newStride; 
     }
 
-    static writeHeaders(ofstream)
+    static void writeHeaders(ofstream& of, BMPFileHeader fileHeader, BMPInfoHeader infoHeader,BMPColorHeader colorHeader ){
+        of.write(reinterpret_cast<char*>(&fileHeader),sizeof(fileHeader));
+        of.write(reinterpret_cast<char*>(&infoHeader),sizeof(infoHeader));
+        if(infoHeader.bit_count == 32){
+            of.write(reinterpret_cast<char*>(&colorHeader),sizeof(colorHeader));
+        }
+    }
+
+
+    static void writeHeadersAndData(ofstream& of, BMPFileHeader fileHeader, BMPInfoHeader infoHeader,BMPColorHeader colorHeader , vector<uint8_t> data){
+        writeHeaders(of,fileHeader,infoHeader,colorHeader);
+        of.write(reinterpret_cast<char*>(data.data()),data.size());
+    }
+    static void printBMPHeaders(const BMPFileHeader& fileHeader, const BMPInfoHeader& infoHeader) {
+        // Print BMPFileHeader fields
+        std::cout << "===== BMP File Header =====" << std::endl;
+        std::cout << "File Type: " << std::hex << "0x" << fileHeader.file_type << std::dec << std::endl;
+        std::cout << "File Size: " << fileHeader.file_size << " bytes" << std::endl;
+        std::cout << "Reserved1: " << fileHeader.reserved1 << std::endl;
+        std::cout << "Reserved2: " << fileHeader.reserved2 << std::endl;
+        std::cout << "Pixel Data Offset: " << fileHeader.offset_data << " bytes" << std::endl;
+
+        // Print BMPInfoHeader fields
+        std::cout << "===== BMP Info Header =====" << std::endl;
+        std::cout << "Header Size: " << infoHeader.size << " bytes" << std::endl;
+        std::cout << "Image Width: " << infoHeader.width << " pixels" << std::endl;
+        std::cout << "Image Height: " << infoHeader.height << " pixels" << std::endl;
+        std::cout << "Planes: " << infoHeader.planes << std::endl;
+        std::cout << "Bit Count: " << infoHeader.bit_count << " bits per pixel" << std::endl;
+        std::cout << "Compression: " << infoHeader.compression << std::endl;
+        std::cout << "Image Size: " << infoHeader.size_image << " bytes" << std::endl;
+        std::cout << "X Pixels per Meter: " << infoHeader.x_pixels_per_meter << std::endl;
+        std::cout << "Y Pixels per Meter: " << infoHeader.y_pixels_per_meter << std::endl;
+        std::cout << "Colors Used: " << infoHeader.colors_used << std::endl;
+        std::cout << "Important Colors: " << infoHeader.colors_important << std::endl;
+    }
 
 };
 

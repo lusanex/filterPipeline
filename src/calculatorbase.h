@@ -13,7 +13,7 @@ class CalculatorBase{
     public:
         CalculatorBase(const string& calcName)
             :name(calcName){}
-        virtual unique_ptr<CalculatorContext> registerContext() = 0;
+        virtual unique_ptr<CalculatorContext> registerContext(const shared_ptr<map<string,Packet>>& newSidePacket = make_shared<map<string,Packet>>()) = 0;
         virtual void enter(CalculatorContext* cc, float delta) = 0;
         virtual void process(CalculatorContext* cc, float delta) = 0;
         virtual void close(CalculatorContext* cc, float delta) =0;

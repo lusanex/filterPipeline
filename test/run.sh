@@ -2,6 +2,7 @@
 
 # Create the bin directory if it doesn't exist
 mkdir -p bin
+mkdir -p out
 
 # Compile the code
 g++ -Wall main_tests.cpp -o bin/tests

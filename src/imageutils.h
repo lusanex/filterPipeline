@@ -123,7 +123,7 @@ public:
 
         // Read BMP info header
         file.read(reinterpret_cast<char *>(&infoHeader), sizeof(infoHeader));
-        printBMPHeaders(fileHeader,infoHeader);
+
 
         // Handle 32-bit BMPs with color masks
         if (infoHeader.bit_count == 32) {
@@ -136,6 +136,8 @@ public:
                 throw ImageException("Error reading BMP unrecognized file format");
             }
         }
+
+        printBMPHeaders(fileHeader,infoHeader,colorHeader);
         // Move to pixel data location
         file.seekg(fileHeader.offset_data, file.beg);
 
@@ -185,18 +187,19 @@ public:
         BMPColorHeader colorHeader;
 
         // Populate headers based on the Image object
-        fileHeader.file_type = 0x4D42;
         infoHeader.compression = 0;
         fileHeader.offset_data = sizeof(BMPFileHeader) + sizeof(BMPInfoHeader);
+        infoHeader.size = sizeof(BMPInfoHeader);
         if (image.getFormat() == PixelFormat::RGBA32) {
             infoHeader.size = sizeof(BMPInfoHeader) + sizeof(BMPColorHeader);
             fileHeader.offset_data += sizeof(BMPColorHeader);
             infoHeader.compression = 3;
-            fileHeader.file_size = fileHeader.offset_data + static_cast<uint32_t>(image.getData().size());
+            fileHeader.file_size = fileHeader.offset_data 
+                + static_cast<uint32_t>(image.getData().size());
         }
         fileHeader.file_size = fileHeader.offset_data + image.getData().size();
 
-        infoHeader.size = sizeof(BMPInfoHeader);
+
         infoHeader.width = image.getWidth();
         infoHeader.height = image.getHeight();
         infoHeader.planes = 1;
@@ -208,7 +211,7 @@ public:
         }
 
         // Write BMP file
-        std::ofstream file(filename, std::ios::binary);
+        ofstream file(filename, std::ios::binary);
         if (!file.is_open()) {
             throw std::runtime_error("Error: Unable to open file " + filename);
         }
@@ -219,13 +222,13 @@ public:
             file.write(reinterpret_cast<const char *>(&colorHeader), sizeof(colorHeader));
         }
         file.write(reinterpret_cast<const char *>(image.getData().data()), image.getData().size());
-    }
+    }        
 
-private:
+    private:
 
-    static uint32_t rowStride;
-    static void validateColorHeader(const BMPColorHeader &colorHeader) {
-        BMPColorHeader expectedHeader;
+        static uint32_t rowStride;
+        static void validateColorHeader(const BMPColorHeader &colorHeader) {
+            BMPColorHeader expectedHeader;
         if (colorHeader.red_mask != expectedHeader.red_mask ||
             colorHeader.green_mask != expectedHeader.green_mask ||
             colorHeader.blue_mask != expectedHeader.blue_mask ||
@@ -257,32 +260,47 @@ private:
         writeHeaders(of,fileHeader,infoHeader,colorHeader);
         of.write(reinterpret_cast<char*>(data.data()),data.size());
     }
-    static void printBMPHeaders(const BMPFileHeader& fileHeader, const BMPInfoHeader& infoHeader) {
-        // Print BMPFileHeader fields
-        std::cout << "===== BMP File Header =====" << std::endl;
-        std::cout << "File Type: " << std::hex << "0x" << fileHeader.file_type << std::dec << std::endl;
-        std::cout << "File Size: " << fileHeader.file_size << " bytes" << std::endl;
-        std::cout << "Reserved1: " << fileHeader.reserved1 << std::endl;
-        std::cout << "Reserved2: " << fileHeader.reserved2 << std::endl;
-        std::cout << "Pixel Data Offset: " << fileHeader.offset_data << " bytes" << std::endl;
+    static void printBMPHeaders(const BMPFileHeader& fileHeader, const BMPInfoHeader& infoHeader, const BMPColorHeader& colorHeader) {
+        // Read BMP File Header
+        cout << "BMP File Header:" << endl;
+        cout << "File Type: " << hex << setw(4) << setfill('0') << fileHeader.file_type << endl;
+        cout << "File Size: " << dec << fileHeader.file_size << " bytes" << endl;
+        cout << "Reserved1: " << fileHeader.reserved1 << endl;
+        cout << "Reserved2: " << fileHeader.reserved2 << endl;
+        cout << "Offset Data: " << fileHeader.offset_data << " bytes" << endl;
+        cout << endl;
 
-        // Print BMPInfoHeader fields
-        std::cout << "===== BMP Info Header =====" << std::endl;
-        std::cout << "Header Size: " << infoHeader.size << " bytes" << std::endl;
-        std::cout << "Image Width: " << infoHeader.width << " pixels" << std::endl;
-        std::cout << "Image Height: " << infoHeader.height << " pixels" << std::endl;
-        std::cout << "Planes: " << infoHeader.planes << std::endl;
-        std::cout << "Bit Count: " << infoHeader.bit_count << " bits per pixel" << std::endl;
-        std::cout << "Compression: " << infoHeader.compression << std::endl;
-        std::cout << "Image Size: " << infoHeader.size_image << " bytes" << std::endl;
-        std::cout << "X Pixels per Meter: " << infoHeader.x_pixels_per_meter << std::endl;
-        std::cout << "Y Pixels per Meter: " << infoHeader.y_pixels_per_meter << std::endl;
-        std::cout << "Colors Used: " << infoHeader.colors_used << std::endl;
-        std::cout << "Important Colors: " << infoHeader.colors_important << std::endl;
+        // Read BMP Info Header
+        cout << "BMP Info Header:" << endl;
+        cout << "Header Size: " << infoHeader.size << " bytes" << endl;
+        cout << "Width: " << infoHeader.width << " pixels" << endl;
+        cout << "Height: " << infoHeader.height << " pixels" << endl;
+        cout << "Planes: " << infoHeader.planes << endl;
+        cout << "Bit Count: " << infoHeader.bit_count << " bits per pixel" << endl;
+        cout << "Compression: " << infoHeader.compression << endl;
+        cout << "Image Size: " << infoHeader.size_image << " bytes" << endl;
+        cout << "X Pixels per Meter: " << infoHeader.x_pixels_per_meter << endl;
+        cout << "Y Pixels per Meter: " << infoHeader.y_pixels_per_meter << endl;
+        cout << "Colors Used: " << infoHeader.colors_used << endl;
+        cout << "Important Colors: " << infoHeader.colors_important << endl;
+        cout << endl;
+
+        // Read BMP Color Header
+        cout << "BMP Color Header:" << endl;
+        cout << "Red Mask: " << hex << colorHeader.red_mask << endl;
+        cout << "Green Mask: " << hex << colorHeader.green_mask << endl;
+        cout << "Blue Mask: " << hex << colorHeader.blue_mask << endl;
+        cout << "Alpha Mask: " << hex << colorHeader.alpha_mask << endl;
+        cout << "Color Space Type: " << hex << colorHeader.color_space_type << endl;
+        for (int i = 0; i < 16; ++i) {
+            cout << "Unused[" << i << "]: " << hex << colorHeader.unused[i] << endl;
+        }
+        cout << endl;
+        cout << dec << endl;
     }
 
 };
 
 uint32_t ImageUtils::rowStride = {0};
-        
+            
 #endif

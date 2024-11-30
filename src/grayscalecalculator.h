@@ -1,5 +1,5 @@
 #ifndef GRAYSCALE_CALCULATOR_H
-#define GRAY
+#define GRAYSCALE_CALCULATOR_H
 
 #include "calculatorbase.h"
 #include "image.h"
@@ -11,6 +11,7 @@ class GrayscaleCalculator : public CalculatorBase {
 private:
     const string kOutputGrayscale = "ImageGrayscale";
     const string kOutputDither = "ImageDither";
+
 
 
 public:
@@ -64,6 +65,7 @@ public:
 
         for ( size_t i = 0 ; i < dataSize; i += pixelSize ){
             size_t row = i / realStride;
+            
             //cout << "i " << i << " row " << row << endl;
             if ( row > height ) break;
             uint8_t blue = pixelData[i];
@@ -79,9 +81,9 @@ public:
             //cout << "gray " << static_cast<int>(gray) << endl;
             //cout << " alpha " << static_cast<int>(alpha) << endl;
 
-            uint8_t temp = blue;
-            blue = red;
-            red = temp;
+            //uint8_t temp = blue;
+            //blue = red;
+            //red = temp;
             pixelData[i] = gray;       
             pixelData[i + 1] = gray;   
             pixelData[i + 2] = gray;   
@@ -90,12 +92,13 @@ public:
 
         // Leave alpha channel (if present) unchanged
 
-        ostringstream error;
-        Image outGray = outputImage.clone();
-        error << "Output port should be " << cc->kTagOutput << endl;
+        //ostringstream error;
+        //Image outGray = outputImage.clone();
+        //error << "Output port should be " << cc->kTagOutput << endl;
         //assert(cc->hasOutput(cc->kTagOutput) && error.str().c_str());
         //cc->getOutputPort(cc->kTagOutput).write(Packet(std::move(outputImage)));
-        cc->getOutputPort(kOutputGrayscale).write(Packet(std::move(outGray)));
+        //assert(cc->hasOutput(kOutputGrayscale) && "no such port grayscale");
+        cc->getOutputPort(kOutputGrayscale).write(Packet(std::move(outputImage)));
 
         //cout <<  "CALCULATOR END " << endl;
 

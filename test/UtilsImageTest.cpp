@@ -53,8 +53,9 @@ private:
         
     }
     static void testLoadReadBlueImage() {
-        const string imagePath = "assets/lena_color.bmp";
-        cout << "Running test for image: " << imagePath << endl;
+        const string nameFile = "character.bmp";
+        const string imagePath = "assets/" + nameFile;
+        cout << "RUNNING TEST FOR LOAD AND WRITE: " << imagePath << endl;
 
         // Step 1: Read the image
         Image image = ImageUtils::readBMP(imagePath);
@@ -69,7 +70,8 @@ private:
         size_t width = image.getWidth();
         size_t height = image.getHeight();
         size_t stride = image.getStride();
-        size_t pixelSize = Image::bitsPerPixel(image.getFormat()) / 8;
+        const size_t pixelSize = Image::bitsPerPixel(image.getFormat()) / 8;
+
         size_t dataSize = pixelData.size(); 
 
         //assert(image.getFormat() == PixelFormat::RGB24);
@@ -81,47 +83,51 @@ private:
         cout << "pixel size " << pixelSize << endl;
         size_t offset = (stride - (pixelSize *  width));
         cout << "offset : " << offset << endl;
-        size_t realStride = pixelSize * width;
+        size_t realStride = ((width * pixelSize + 3) / 4) * 4;
         //assert(offset == 32 && "offset should be 32");
         //assert(realStride == 96 && "real stride should be 96");
-        cout << "reasl stride " << realStride << endl;
+        cout << "real stride " << realStride << endl;
+        cout << "data size " << pixelData.size() << endl;
 
-        for (size_t i = 0; i < dataSize; i += pixelSize) {
+        for (size_t y = 0; y < height; ++y) {
+            for( size_t x = 0 ; x < width ; ++x ){
 
-            size_t row = i / realStride; // Calculate the row number
-            size_t col = (i % realStride) / pixelSize; 
-            if ( row > height ) break;
-            //cout << "row i " << i << " stride " << realStride << " = " << row << endl;
-
-            // Extract RGB components
-            uint8_t blue = pixelData[i];       // Blue
+            size_t i  = (y * realStride) + (x * pixelSize); // Calculate the row number
+            //cout << " i " << i << endl;
+            // Extract BGR components
+            uint8_t blue =  pixelData[i];       // Blue
             uint8_t green = pixelData[i + 1];  // Green
-            uint8_t red = pixelData[i + 2];    // Red
-
+            uint8_t red =   pixelData[i + 2];    // Red
+            //uint8_t alpha = pixelData[i + 3];
+            uint8_t gray = static_cast<uint8_t>(
+                                    0.299 * blue +
+                                    0.587 * green +
+                                    0.114 * red
+                    );
             /*
             cout << "BGR : " << static_cast<int>(blue) << "," 
                              << static_cast<int>(green) << "," 
                              << static_cast<int>(red) << endl;
                              */
-            uint8_t temp = blue;
-            blue = red;
-            red = temp;
-            pixelData[i] = blue;
-            pixelData[i + 1] = green;
-            pixelData[i + 2] = red;
+            pixelData[i    ] = gray;
+            pixelData[i + 1] = gray;
+            pixelData[i + 2] = gray;
+            //pixelData[i + 3] = alpha;
 
             //cout << "blue " << static_cast<int>(blue) << endl;
             //cout << "green " << static_cast<int>(green) << endl;
             //cout << "red " << static_cast<int>(red) << endl;
 
+            
+            }
         }
       
         // Step 4: Output validation results
-        cout << "Red region validation: " << (isRedValid ? "PASSED" : "FAILED") << endl;
-        cout << "Blue region validation: " << (isBlueValid ? "PASSED" : "FAILED") << endl;
+        cout << "data size after update " << image.getData().size() << endl;
+        cout << "data size after update " << pixelData.size() << endl;
 
         // Step 5: Write the image back to a new file
-        const string outputPath = "out/output_test_blue_red.bmp";
+        const string outputPath = "out/output_" + nameFile;
         ImageUtils::writeBMP(outputPath, image);
         cout << "Image successfully written to: " << outputPath << endl;
     }

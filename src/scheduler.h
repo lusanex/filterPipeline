@@ -95,7 +95,6 @@ public:
                 getCCByCalculatorName(calculators[i]->getName());
             CalculatorContext* nextContext = 
                 getCCByCalculatorName(calculators[i + 1]->getName());
-
             vector<string> outputPortNames = currentContext->getOutputPortTags();
             for (size_t j = 0; j < outputPortNames.size(); ++j) {
                 const string& tag = outputPortNames[j];
@@ -132,7 +131,7 @@ public:
         try{
           p = outputPort.read();
         }catch(const PortException& e){
-            //cout << e.what() << endl;
+            cout << e.what() << endl;
         }
         return p;
     }
@@ -198,6 +197,9 @@ public:
      */
     void stop() {
         running = false;
+    }
+    int size() const {
+        return calculators.size();
     }
 
     private:

@@ -11,7 +11,8 @@
 class DitherCalculator : public CalculatorBase {
 private:
     const string kInputGrayscale = "ImageGrayscale";
-   const string kOutputDither = "ImageDither";
+    const string kOutputDither = "ImageDither";
+    const string kOutputPixel = "ImagePixel";
     const int bayer2[2 * 2] = {
         0, 2,
         3, 1
@@ -73,7 +74,8 @@ private:
         // Process method: Perform the grayscale transformation
         void process(CalculatorContext* cc, float delta) override {
             //cout << "CALCULATOR  " << endl;
-            Port& inputPort = cc->getInputPort(cc->kTagInput);
+            Port& inputPort = cc->getInputPort(kOutputPixel);
+
             const int redLevels = cc->getSidePacket(kRedLevels).get<int>();
             const int greenLevels = cc->getSidePacket(kGreenLevels).get<int>();
             const int blueLevels = cc->getSidePacket(kBlueLevels).get<int>();
@@ -148,12 +150,12 @@ private:
 
         // Leave alpha channel (if present) unchanged
 
-        ostringstream error;
-        Image outImage = outputImage.clone();
-        error << "Output port should be " << cc->kTagOutput << endl;
+        //ostringstream error;
+        //Image outImage = outputImage.clone();
+        //error << "Output port should be " << cc->kTagOutput << endl;
         //assert(cc->hasOutput(cc->kTagOutput) && error.str().c_str());
         //cc->getOutputPort(cc->kTagOutput).write(Packet(std::move(outputImage)));
-        cc->getOutputPort(kOutputDither).write(Packet(std::move(outImage)));
+        cc->getOutputPort(kOutputDither).write(Packet(std::move(outputImage)));
         //cout <<  "CALCULATOR END " << endl;
 
     }

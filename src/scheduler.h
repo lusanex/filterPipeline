@@ -8,6 +8,7 @@
 #include <ctime>
 #include "calculatorbase.h"
 #include "calculatorcontext.h"
+#include "image.h"
 
 using namespace std;
 
@@ -25,9 +26,17 @@ private:
     unsigned long long startTimeScheduler = 0;
     unsigned long long startTimeFrame = 0;
 
+    unsigned long long numOfFrames = 0;
 
     Port inputPort; 
     Port outputPort; 
+
+    unique_ptr<void (*)(const Packet&)>callbackWrite;
+
+    unique_ptr<Packet (*)(void*)>callbackRead;
+    unique_ptr<void*> context;
+
+
 
     /**
      * Calculates the delta time (time elapsed since the last frame) using `ctime`.
@@ -55,7 +64,8 @@ public:
           FRAME_DURATION(1.0f / FRAME_RATE),
           FRAME_RATE_MS(static_cast<unsigned long long>(FRAME_DURATION * 1000000.0f)),
           inputPort(Port()),
-          outputPort(Port()) {}
+          outputPort(Port()),
+          callbackRead(nullptr){}
 
 
     /**
@@ -79,6 +89,18 @@ public:
         calculators.push_back(unique_ptr<CalculatorBase>(calculator));
         unique_ptr<CalculatorContext> context = calculator->registerContext(newSidePacket);
         contexts[calculator->getName()] = std::move(context);
+    }
+
+
+    void registerOutputCallback(void (*cb)(const Packet&)){
+        //cout << "registirng callback " << endl;
+        callbackWrite = make_unique<void (*)(const Packet&)>(cb);
+    }
+
+    void registerInputCallback(Packet (*cb)(void*), void* ctx){
+        //cout << "registirng callback " << endl;
+        callbackRead = make_unique<Packet(*)(void*)>(cb);
+        context = make_unique<void *>(ctx);
     }
 
     /**
@@ -159,7 +181,12 @@ public:
 
         while (running) {
 
-            // Get the current calculator and context
+            if (callbackRead && *callbackRead) {
+                Packet newPacket = (*callbackRead)(*context);
+                inputPort.write(std::move(newPacket));
+            }
+
+                        // Get the current calculator and context
             CalculatorBase* currentCalc = calculators[current_index].get();
             CalculatorContext* currentCC = getCCByCalculatorName(currentCalc->getName());
 
@@ -173,8 +200,18 @@ public:
 
             // Frame duration enforcement
             unsigned long long  endTimeFrame = getCurrentTime();
-            //cout << "endTimeFrame : " << endTimeFrame << endl;
+            //cout << "endTimeFrame : " << endTimeFrame  << " FRAME RATE MS: "<< FRAME_RATE_MS<< endl;
             unsigned long long  elapsedTimeFrame = endTimeFrame - startTimeFrame;
+            numOfFrames++;
+
+            if (callbackWrite && *callbackWrite){
+                //cout << "calback " << endl;;
+                //cout << "procced frames " << numOfFrames << endl;
+                //cout << "elapsed time " << elapsedTimeFrame << endl;
+                (*callbackWrite)(readFromOutputPort());
+
+                //cout << " elpase time " << elapsedTimeFrame << " frame rate ms " << FRAME_RATE_MS << endl;
+            }
 
             if (elapsedTimeFrame >= FRAME_RATE_MS) {
                 //cout << "One frame elapse " << elapsedTimeFrame << endl;
@@ -204,11 +241,19 @@ public:
 
     private:
     unsigned long long getCurrentTime() const {
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        return static_cast<unsigned long long>(ts.tv_sec) * 1000000LL + ts.tv_nsec / 1000;
+    }
+
+    /*
+    unsigned long long getCurrentTime() const {
         struct timeval tv;
         gettimeofday(&tv,nullptr);
         return static_cast<unsigned long long>(tv.tv_sec) * 1000000LL + tv.tv_usec;
 
     }
+    */
     float calculateDeltaTime(unsigned long long& lastTime) {
         unsigned long long now = getCurrentTime(); 
         float deltaTime = static_cast<float>(now - lastTime) / 1000000.f;

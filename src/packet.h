@@ -129,11 +129,28 @@ public:
         }
         return typedHolder->get(); 
     }
+
+private:
+
+    long long currentTimestamp(){
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC,&ts);
+        long long current = static_cast<long long>(ts.tv_sec) * 10000000LL + ts.tv_nsec;
+        if (current <= lastTimestamp) {
+            current = lastTimestamp + 1;
+        }
+        lastTimestamp = current;
+        return current;
+
+    }
+
+
       
 public:
     static long long lastTimestamp;
     static const long long kInvalidTimestamp = -11111111;
 
+       /*
     long long currentTimestamp() {
         struct timeval tv;
         gettimeofday(&tv, nullptr);
@@ -144,6 +161,7 @@ public:
         lastTimestamp = current;
         return current;
     }
+    */
 
 
 

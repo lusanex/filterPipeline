@@ -1,96 +1,102 @@
 # Filter Pipeline Framework
 
+# Filter Pipeline Framework
+
 ## Overview
 
 The **Filter Pipeline Framework** is a modular system designed to process video or image streams using a sequence of calculators. Each calculator performs specific tasks on the data, such as grayscale conversion, dithering, pixelation, or applying overlays. The framework is built around a central **Scheduler** that manages calculators and their associated contexts, ensuring smooth execution and data flow.
 
-This document provides a detailed explanation of the framework's components and their roles.
+This document provides a detailed explanation of the framework's components and the programming concepts it employs.
 
 ---
 
-## Core Components
+## Core Components and Programming Concepts
 
-### 1. CalculatorBase
+The framework demonstrates the use of the following core programming concepts:
 
-**Purpose**: Abstract base class for all calculators.
+### 1. Inheritance
 
-**Key Features**:
-- Defines a **lifecycle** with three methods:
-  - `enter`: Called at the start of the calculator's lifecycle (executed for every time slice allocated to the calculator).
-  - `process`: Performs the main processing task (called for at least one frame of data).
-  - `close`: Called at the end of the calculator's lifecycle (for cleanup).
-- Derived classes implement specific functionality by overriding these methods.
+**Purpose**: The framework leverages inheritance to create a hierarchy of calculators derived from the abstract base class `CalculatorBase`.
 
-### 2. Image
-
-**Purpose**: Represents an image with raw pixel data.
-
-**Key Features**:
-- Stores image data in **RGBA** or **RGB format**.
-- Provides metadata such as width, height, and pixel format.
-- Includes utility methods for manipulating image data (e.g., pixel-by-pixel operations).
-
-### 3. Packet
-
-**Purpose**: A general-purpose container for passing data between calculators.
-
-**Key Features**:
-- Includes a timestamp for synchronization.
-- Encapsulates a `PacketHolder`, which wraps a template type (`T`) for polymorphic data handling.
-- Allows flexible handling of various data types.
-
-### 4. PacketHolder
-
-**Purpose**: Base class for `Packet`, enabling polymorphism.
-
-**Key Features**:
-- Uses templates to store and manipulate specific data types (`T`).
-
-### 5. Port
-
-**Purpose**: Acts as a queue for `Packet`s.
-
-**Key Features**:
-- Supports **write** and **read** operations for data exchange.
-- Provides a thread-safe mechanism for communication between calculators.
-
-### 6. CalculatorContext
-
-**Purpose**: Manages the execution context for each calculator.
-
-**Key Features**:
-- Contains:
-  - **Input Ports**: A map of ports for receiving data.
-  - **Output Ports**: A map of ports for sending data.
-  - **Side Packets**: A shared map of configuration parameters or constants accessible by the calculator.
-- Each calculator creates and manages its own context during registration.
-
-### 7. Scheduler
-
-**Purpose**: Orchestrates the execution of calculators in the pipeline.
-
-**Key Features**:
-- Registers calculators and retrieves their contexts.
-- Manages a sequence of calculators, ensuring they execute in order.
-- Implements **time slicing**, giving each calculator a defined period to process data.
-- Computes **delta time** to measure the time elapsed between frames.
-- Enforces a frame rate limit using `FRAME_RATE_MS`.
-- Provides callbacks:
-  - **Input Callback**: Supplies input data to the pipeline.
-  - **Output Callback**: Handles processed data from the pipeline.
-
-### 8. ImageUtils
-
-**Purpose**: Helper class for working with BMP images.
-
-**Key Features**:
-- Includes methods for loading BMP images and converting them into the `Image` class.
-- Provides functionality to save `Image` objects back to BMP format.
+**Example**:
+- `GrayscaleCalculator`, `PixelShapeCalculator`, and `DitherCalculator` all inherit from `CalculatorBase` and implement their unique functionality while adhering to the common lifecycle interface (`enter`, `process`, `close`).
 
 ---
+
+### 2. Polymorphism
+
+**Purpose**: The `Scheduler` uses polymorphism to manage calculators. It stores pointers to `CalculatorBase` objects and invokes their methods without needing to know their concrete types.
+
+**Example**:
+- The `Scheduler` iterates over a collection of calculators, calling `process` for each, allowing them to operate independently based on their specific logic.
+
+---
+### 3. Text File I/O
+
+**Purpose**: Handles reading and writing image data to and from files using file I/O operations.
+
+**Example**:
+- The `ImageUtils` class includes methods like `readBMP` and `writeBMP` to read BMP images from files and write processed images back to files. These methods utilize file streams to handle raw image data and convert it into the framework's `Image` class for further processing.
+
+---
+
+### 4. Exceptions
+
+**Purpose**: Ensures robustness by handling errors gracefully through custom exceptions.
+
+**Example**:
+- `CalculatorException` and `PortException` are used to manage errors related to calculator operations and port data flow, respectively.
+
+---
+
+### 5. Overloaded Operator
+
+**Purpose**: Simplifies logging and debugging by overloading the `<<` operator for structured output.
+
+**Example**:
+- The `<<` operator is used to output formatted information about objects like `Image` or `Packet`.
+
+---
+
+### 6. Abstract Class
+
+**Purpose**: Defines a consistent interface for all calculators through the abstract class `CalculatorBase`.
+
+**Example**:
+- The `CalculatorBase` class mandates the implementation of the `enter`, `process`, and `close` methods, ensuring a consistent structure for all derived calculators.
+
+---
+
+### 7. A Data Structure with an Iterator
+
+**Purpose**: Implements custom data structures with iterators for managing pipeline components.
+
+**Example**:
+- The `Port` class manages a queue of `Packet`s, enabling sequential data flow between calculators and uses iterator to find a queue name.
+
+---
+
+### 8. A Data Structure from the C++ Standard Template Library (STL)
+
+**Purpose**: Utilizes STL containers for efficient data management.
+
+**Example**:
+- `std::map` is used in `CalculatorContext` to manage input ports, output ports, and side packets. This ensures efficient lookups and storage of configuration data.
+
+---
+
+## Summary
+
+The **Filter Pipeline Framework** uses:
+- **Inheritance** and **Polymorphism** for modular design.
+- **Text File I/O** for dynamic configuration.
+- **Exceptions** for robust error handling.
+- **Overloaded Operators** for enhanced debugging.
+- **Abstract Classes** for enforcing consistency in component design.
+- **Custom Data Structures with Iterators** for controlled data flow.
+- **STL Containers (e.g., `map`)** for efficient management of configuration and port data.
 
 ## Framework Workflow
-
 
 ### Calculator Registration
 - Each calculator is derived from `CalculatorBase`.
@@ -147,6 +153,8 @@ public:
     void close(CalculatorContext* cc, float delta) override {}
 };
 
+
+int main(){
     Scheduler scheduler;
 
     GrayscaleCalculator grayscaleCalculator;
@@ -161,8 +169,11 @@ public:
         // Handle processed output data
     });
     scheduler.connectCalculators();
-    scheduler.run();
+    while(true){
+        scheduler.run();
+    }
 
+}
 
 ```
 ## Example Usage
@@ -227,6 +238,11 @@ Below are examples of the video frames before and after processing through the p
 
 
 ---
+
+### Acknowledgments
+
+This project was inspired by the architecture and design patterns used in [MediaPipe](https://github.com/google/mediapipe). No source code was copied, and this implementation was created independently based on publicly available concepts and ideas.
+
 
 ## Attributions
 

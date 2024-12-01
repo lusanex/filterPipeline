@@ -24,6 +24,11 @@
  * - Only 24-bit and 32-bit uncompressed BMP files are supported.
  * - Header validation must pass for BMP files to be processed correctly.
  * - Pixel data is assumed to be bottom-up as per BMP standard.
+ *
+ * Algorithm adapted and used from: 
+ *
+ * https://solarianprogrammer.com/2018/11/19/cpp-reading-writing-bmp-images/
+ *
  **********************************/
 
 #ifndef IMAGE_UTILS_H

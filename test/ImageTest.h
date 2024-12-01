@@ -79,7 +79,7 @@ private:
         original.setData(dummyData);
 
         // Clone the image
-        Image clone = original.clone();
+        Image clone = Image(original);
 
         // Validate clone
         assert(clone.getWidth() == original.getWidth() && "Clone width mismatch");

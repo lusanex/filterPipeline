@@ -1,11 +1,3 @@
-#ifndef PORT_EXCEPTION_H
-#define PORT_EXCEPTION_H
-
-#include <exception>
-#include <string>
-
-using namespace std;
-
 /*
  * PortException.h - A custom exception class for the Port class.
  * Author: Erich Gutierrez Chavez
@@ -13,6 +5,15 @@ using namespace std;
  * - This class is used to handle errors in the Port class, such as reading 
  *   from an empty queue.
  */
+
+
+#ifndef PORT_EXCEPTION_H
+#define PORT_EXCEPTION_H
+
+#include <exception>
+#include <string>
+
+using namespace std;
 
 class PortException : public exception {
 private:

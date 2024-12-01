@@ -1,85 +1,127 @@
+/**********************************
+ * @file packetholder.h
+ * @author Erich Gutierrez Chavez
+ * @brief Defines the PacketHolder class template and 
+ *  base class for managing packet data.
+ *
+ * @details
+ * - PacketHolderBase and PacketHolder template classes.
+ * - PacketHolderBase provides a polymorphic base class for packet management.
+ * - PacketHolder is a templated class that manages packet data with deep copy, 
+ *   move semantics, and type safety.
+ *
+ * Constraints:
+ * - The template type `T` must be copyable and movable, 
+ *   as deep copies and moves are implemented.
+ * - Ensures encapsulation by managing data through `unique_ptr`.
+ **********************************/
+
 #ifndef PACKET_HOLDER_H
 #define PACKET_HOLDER_H
 
 #include <memory>
-#include "typeid.h"  // Assuming you have a custom TypeId implementation
-#include "packetexception.h"  // Assuming this is a custom exception class
+#include "packetexception.h"  
+using namespace std;
 
+/**********************************
+ * Base class for packet holders, 
+ * enabling polymorphism
+ **********************************/
 class PacketHolderBase {
 public:
+    /**********************************
+     * Virtual destructor to ensure proper 
+     * cleanup for derived classes.
+     **********************************/
     virtual ~PacketHolderBase() = default;
 };
 
+/**********************************
+ * @class PacketHolder
+ * @brief A templated class for managing packet data 
+ * with deep copy and move semantics.
+ * @tparam T The type of data to be managed.
+ **********************************/
 template <typename T>
 class PacketHolder : public PacketHolderBase {
-private:
-    std::unique_ptr<T> data;  // Use smart pointer for memory safety
-    TypeId typeId;            // TypeId of the stored type
+    private:
+        unique_ptr<T> data;  
 
-public:
-    // Constructor for lvalue data
-    explicit PacketHolder(const T& value)
-        : data(std::make_unique<T>(value)), typeId(TypeId::Of<T>()) {}
+    public:
+        /**********************************
+         * Constructs a PacketHolder with a 
+         * copy of the provided data.
+         * @param value The data to be copied 
+         *        into the PacketHolder.
+         **********************************/
+        explicit PacketHolder(const T& value)
+            : data(make_unique<T>(value)) {}
 
-    // Constructor for rvalue data
-    explicit PacketHolder(T&& value)
-        : data(std::make_unique<T>(std::move(value))), typeId(TypeId::Of<T>()) {}
+        /**********************************
+         * Constructs a PacketHolder by moving the provided data.
+         * @param value The data to be moved into the PacketHolder.
+         **********************************/
+        explicit PacketHolder(T&& value)
+            : data(make_unique<T>(std::move(value))) {}
 
-    // Copy constructor
-    PacketHolder(const PacketHolder& other)
-        : data(std::make_unique<T>(*other.data)), typeId(other.typeId) {}
+        /**********************************
+         * Copy constructor for deep copying another PacketHolder.
+         * @param other The PacketHolder to be copied.
+         **********************************/
+        PacketHolder(const PacketHolder& other)
+            : data(make_unique<T>(*other.data)) {}
 
-    // Copy assignment operator
-    PacketHolder& operator=(const PacketHolder& other) {
-        if (this != &other) {
-            data = std::make_unique<T>(*other.data);  // Deep copy
-            typeId = other.typeId;
+        /**********************************
+         * Copy assignment operator for deep copying another PacketHolder.
+         * @param other The PacketHolder to be copied.
+         * @return A reference to the current object after the copy.
+         **********************************/
+        PacketHolder& operator=(const PacketHolder& other) {
+            if (this != &other) {
+                data = make_unique<T>(*other.data);  // Deep copy
+            }
+            return *this;
         }
-        return *this;
-    }
 
-    // Move constructor
-    PacketHolder(PacketHolder&& other) noexcept
-        : data(std::move(other.data)), typeId(other.typeId) {}
+        /**********************************
+         * Move constructor to transfer ownership of data from another PacketHolder.
+         * @param other The PacketHolder to be moved from.
+         **********************************/
+        PacketHolder(PacketHolder&& other) noexcept
+            : data(std::move(other.data)) {}
 
-    // Move assignment operator
-    PacketHolder& operator=(PacketHolder&& other) noexcept {
-        if (this != &other) {
-            data = std::move(other.data);  // Transfer ownership
-            typeId = other.typeId;
+        /**********************************
+         * Move assignment operator to transfer ownership of data from another PacketHolder.
+         * @param other The PacketHolder to be moved from.
+         * @return A reference to the current object after the move.
+         **********************************/
+        PacketHolder& operator=(PacketHolder&& other) noexcept {
+            if (this != &other) {
+                data = std::move(other.data);  // Transfer ownership
+            }
+            return *this;
         }
-        return *this;
-    }
 
-    // Destructor
-    ~PacketHolder() override = default;  // Smart pointers handle cleanup
+        /**********************************
+         * Destructor to clean up the managed data.
+         **********************************/
+        ~PacketHolder() override = default;  
 
-    // Type validation
-    template <typename U>
-    void validateType() const {
-        if (typeId != TypeId::Of<U>()) {
-            throw PacketException("Invalid packet types. Expected: " +
-                                  TypeId::Of<U>().getId() + ", got: " +
-                                  typeId.getId());
+        /**********************************
+         * Retrieves the data as a constant reference.
+         * @return A constant reference to the managed data.
+         **********************************/
+        const T& get() const {
+            return *data;
         }
-    }
-    template <typename U>
-    const T& get() const{
-        validateType<U>();
-        return *data;
 
-    }
-
-    // Access data with type validation
-    const T& get() const{
-        return *data;
-    }
-
-    T& get() {
-        return *data;
-    }
-
-
+        /**********************************
+         * Retrieves the data as a mutable reference.
+         * @return A mutable reference to the managed data.
+         **********************************/
+        T& get() {
+            return *data;
+        }
 };
 
 #endif  // PACKET_HOLDER_H

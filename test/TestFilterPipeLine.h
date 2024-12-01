@@ -33,7 +33,7 @@ class TestFilterPipeline {
             Scheduler scheduler;
 
 
-            const string nameFile = "assets/lena_color.bmp";
+            const string nameFile = "assets/chapo.bmp";
             const string bannerName = "assets/banner.bmp";
             const string outFile = "out/final_filter.bmp";
 

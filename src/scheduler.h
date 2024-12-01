@@ -1,3 +1,27 @@
+/**********************************
+ * @file scheduler.h
+ * @author Erich Gutierrez Chavez
+ * @brief Defines the Scheduler class for managing the execution of calculators.
+ *
+ * @details
+ * - Manages a sequence of calculators and their contexts.
+ * - Handles input/output data flow through ports.
+ * - Supports callbacks for external input/output operations.
+ * - Enforces frame rate and delta time calculations for synchronized execution.
+ * - Provides utilities for managing calculator registration, connections, and runtime control.
+ *
+ * Key Features:
+ * - Register and connect multiple calculators dynamically.
+ * - Input and output ports for external data handling.
+ * - Callback mechanisms for input and output processing.
+ * - High-resolution frame timing using `clock_gettime`.
+ *
+ * Constraints:
+ * - Calculators must be registered before running the scheduler.
+ * - Proper connections must be established between calculators and ports.
+ * - Frame rate and delta time calculations depend on the system clock accuracy.
+ **********************************/
+
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
@@ -14,36 +38,26 @@ using namespace std;
 
 class Scheduler {
 private:
-    vector<unique_ptr<CalculatorBase>> calculators; 
-    map<string, unique_ptr<CalculatorContext>> contexts; 
-    bool running; 
-    int current_index; 
-    const int FRAME_RATE; 
-    const float FRAME_DURATION; 
-    const unsigned long long FRAME_RATE_MS;
-    const string kTagInput = "kTagInput"; 
-    const string kTagOutput = "kTagOutput"; 
-    unsigned long long startTimeScheduler = 0;
-    unsigned long long startTimeFrame = 0;
+    vector<unique_ptr<CalculatorBase>> calculators; // List of calculators
+    map<string, unique_ptr<CalculatorContext>> contexts; // Calculator contexts
+    bool running; // Scheduler running state
+    int current_index; // Current calculator index
+    const int FRAME_RATE; // Target frame rate
+    const float FRAME_DURATION; // Frame duration in seconds
+    const unsigned long long FRAME_RATE_MS; // Frame duration in microseconds
+    const string kTagInput = "kTagInput"; // Input port tag
+    const string kTagOutput = "kTagOutput"; // Output port tag
+    unsigned long long startTimeScheduler = 0; // Scheduler start time
+    unsigned long long startTimeFrame = 0; // Frame start time
+    unsigned long long numOfFrames = 0; // Number of processed frames
 
-    unsigned long long numOfFrames = 0;
+    Port inputPort; // Input port for external data
+    Port outputPort; // Output port for external data
 
-    Port inputPort; 
-    Port outputPort; 
+    unique_ptr<void (*)(const Packet&)> callbackWrite; // Output callback
+    unique_ptr<Packet (*)(void*)> callbackRead; // Input callback
+    unique_ptr<void*> context; // Context for input callback
 
-    unique_ptr<void (*)(const Packet&)>callbackWrite;
-
-    unique_ptr<Packet (*)(void*)>callbackRead;
-    unique_ptr<void*> context;
-
-
-
-    /**
-     * Calculates the delta time (time elapsed since the last frame) using `ctime`.
-     * @param lastTime The time of the last frame in seconds.
-     * @return Delta time in seconds.
-     */
-   
 public:
     /**
      * Constructor to initialize the Scheduler with default settings.
@@ -57,6 +71,10 @@ public:
           inputPort(Port()), 
           outputPort(Port()) {}
 
+    /**
+     * Constructor to initialize the Scheduler with a specified frame rate.
+     * @param frameRate Target frame rate in frames per second.
+     */
     Scheduler(int frameRate)
         : running(false),
           current_index(0),
@@ -91,14 +109,20 @@ public:
         contexts[calculator->getName()] = std::move(context);
     }
 
-
+    /**
+     * Registers an output callback function for the Scheduler.
+     * @param cb Function pointer for the output callback.
+     */
     void registerOutputCallback(void (*cb)(const Packet&)){
-        //cout << "registirng callback " << endl;
         callbackWrite = make_unique<void (*)(const Packet&)>(cb);
     }
 
+    /**
+     * Registers an input callback function and its context for the Scheduler.
+     * @param cb Function pointer for the input callback.
+     * @param ctx Context pointer for the callback.
+     */
     void registerInputCallback(Packet (*cb)(void*), void* ctx){
-        //cout << "registirng callback " << endl;
         callbackRead = make_unique<Packet(*)(void*)>(cb);
         context = make_unique<void *>(ctx);
     }
@@ -111,7 +135,7 @@ public:
             throw CalculatorException("Error: No calculators registered to connect.");
         }
 
-              // Connect calculators in sequence
+        // Connect calculators in sequence
         for (size_t i = 0; i < calculators.size() - 1; ++i) {
             CalculatorContext* currentContext = 
                 getCCByCalculatorName(calculators[i]->getName());
@@ -125,12 +149,11 @@ public:
             }
         }
 
-        // Connect the last calculator to the scheduler's output port
-        // Connect the scheduler's input port to the first calculator
+        // Connect the first calculator to the scheduler's input port
         CalculatorContext* firstContext = getCCByCalculatorName(calculators[0]->getName());
         firstContext->bindInputPort(kTagInput, inputPort);
 
-
+        // Connect the last calculator to the scheduler's output port
         CalculatorContext* lastContext = 
             getCCByCalculatorName(calculators[calculators.size() - 1]->getName());
         lastContext->bindOutputPort(kTagOutput, outputPort);
@@ -150,9 +173,9 @@ public:
      */
     Packet readFromOutputPort() {
         Packet p;
-        try{
+        try {
           p = outputPort.read();
-        }catch(const PortException& e){
+        } catch(const PortException& e) {
             cout << e.what() << endl;
         }
         return p;
@@ -167,17 +190,13 @@ public:
             throw CalculatorException("No calculators registered to run.");
         }
 
-        if (!running){
+        if (!running) {
             running = true;
-            startTimeScheduler= getCurrentTime();
-            //cout << "Starting time sche " << startTimeFrame << endl;
+            startTimeScheduler = getCurrentTime();
         }
 
-        //cout << "Last start time frame "  << startTimeFrame << endl;
         float delta = calculateDeltaTime(startTimeFrame);
-        //cout << "Delta time : " << delta << endl;
         startTimeFrame = getCurrentTime(); 
-        //cout << "Current start time frame " << startTimeFrame << endl;
 
         while (running) {
 
@@ -186,7 +205,7 @@ public:
                 inputPort.write(std::move(newPacket));
             }
 
-                        // Get the current calculator and context
+            // Get the current calculator and context
             CalculatorBase* currentCalc = calculators[current_index].get();
             CalculatorContext* currentCC = getCCByCalculatorName(currentCalc->getName());
 
@@ -195,26 +214,16 @@ public:
             currentCalc->process(currentCC, delta);
             currentCalc->close(currentCC, delta);
 
-            // Move to the next calculator
-
-
             // Frame duration enforcement
-            unsigned long long  endTimeFrame = getCurrentTime();
-            //cout << "endTimeFrame : " << endTimeFrame  << " FRAME RATE MS: "<< FRAME_RATE_MS<< endl;
-            unsigned long long  elapsedTimeFrame = endTimeFrame - startTimeFrame;
+            unsigned long long endTimeFrame = getCurrentTime();
+            unsigned long long elapsedTimeFrame = endTimeFrame - startTimeFrame;
             numOfFrames++;
 
-            if (callbackWrite && *callbackWrite){
-                //cout << "calback " << endl;;
-                //cout << "procced frames " << numOfFrames << endl;
-                //cout << "elapsed time " << elapsedTimeFrame << endl;
+            if (callbackWrite && *callbackWrite) {
                 (*callbackWrite)(readFromOutputPort());
-
-                //cout << " elpase time " << elapsedTimeFrame << " frame rate ms " << FRAME_RATE_MS << endl;
             }
 
             if (elapsedTimeFrame >= FRAME_RATE_MS) {
-                //cout << "One frame elapse " << elapsedTimeFrame << endl;
                 current_index = (current_index + 1) % calculators.size();
                 return;
             }
@@ -222,38 +231,49 @@ public:
         }
     }
 
-    double getElapsedTime() const{
-        if( startTimeScheduler == 0 ){
+    /**
+     * Retrieves the elapsed time since the scheduler started.
+     * @return Elapsed time in seconds.
+     */
+    double getElapsedTime() const {
+        if (startTimeScheduler == 0) {
             return 0.0;
         }
         unsigned long long currentTime = getCurrentTime();
         return static_cast<double>(currentTime - startTimeScheduler) / 1000000.0;
     }
+
     /**
      * Stops the scheduler.
      */
     void stop() {
         running = false;
     }
+
+    /**
+     * Retrieves the number of registered calculators.
+     * @return Number of calculators.
+     */
     int size() const {
         return calculators.size();
     }
 
-    private:
+private:
+    /**
+     * Retrieves the current system time in microseconds.
+     * @return Current time in microseconds.
+     */
     unsigned long long getCurrentTime() const {
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC, &ts);
         return static_cast<unsigned long long>(ts.tv_sec) * 1000000LL + ts.tv_nsec / 1000;
     }
 
-    /*
-    unsigned long long getCurrentTime() const {
-        struct timeval tv;
-        gettimeofday(&tv,nullptr);
-        return static_cast<unsigned long long>(tv.tv_sec) * 1000000LL + tv.tv_usec;
-
-    }
-    */
+    /**
+     * Calculates the delta time (time elapsed since the last frame).
+     * @param lastTime The time of the last frame in microseconds.
+     * @return Delta time in seconds.
+     */
     float calculateDeltaTime(unsigned long long& lastTime) {
         unsigned long long now = getCurrentTime(); 
         float deltaTime = static_cast<float>(now - lastTime) / 1000000.f;
@@ -263,3 +283,4 @@ public:
 };
 
 #endif // SCHEDULER_H
+

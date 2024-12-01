@@ -66,7 +66,8 @@ public:
     // Read a packet from the queue
     Packet read() {
         if (dataQueue.empty()) {
-            throw PortException("Port read: Queue is empty");
+            //throw PortException("Port read: Queue is empty");
+            return Packet();
         }
         Packet packet = std::move(dataQueue.front());  // Move the packet out
         dataQueue.pop_front();

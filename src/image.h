@@ -38,16 +38,14 @@ private:
     int32_t height;
     PixelFormat format;
     int32_t stride;
-    shared_ptr<vector<uint8_t>> buffer;
+    vector<uint8_t> buffer;
     bool isValid;
-
-
-   
+ 
  
 public:
 
-    static const map<int, PixelFormat> kBitDepthPixelMap; 
-    
+    static const map<int, PixelFormat> kBitDepthPixelMap;
+   
     static PixelFormat toPixelFormat(int32_t bitDepth){
         auto it = kBitDepthPixelMap.find(bitDepth);
         if (it != kBitDepthPixelMap.end()) {
@@ -65,125 +63,133 @@ public:
         return 0;
     }
 
-
 public:
 
-    ~Image() { buffer.reset(); }
+    ~Image() = default;
+
     // Constructor without data
     Image(int32_t width, int32_t height, PixelFormat format)
         : width(width),
           height(height),
           format(format),
           stride(width * bytesPerStride(bitsPerPixel(format))),
-          buffer(make_shared<vector<uint8_t>>()),
-          isValid(false)
-        { 
+          buffer(width * height * bytesPerStride(bitsPerPixel(format)), 0),
+          isValid(false) {
         if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN) {
             throw ImageException("Invalid image dimensions or format");
         }
     }
 
     // Constructor with data (copy)
-    Image(int32_t width, int32_t height, PixelFormat format,
-          vector<uint8_t>& data)
+    Image(int32_t width, int32_t height, PixelFormat format, const vector<uint8_t>& data)
         : width(width),
           height(height),
           format(format),
           stride(width * bytesPerStride(bitsPerPixel(format))),
-          buffer(make_shared<vector<uint8_t>>(data.begin(), data.end())),
-          isValid(true)
-        {
-
-        cout << "w " << width << " h: " << height << " f : " << static_cast<int>(format);
-        if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN ) {
-
-            throw ImageException("Constructor Invaidl image dimensions, format, or data size");
+          buffer(data), // Deep copy
+          isValid(true) {
+        if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN || 
+            data.size() != static_cast<size_t>(height * stride)) {
+            throw ImageException("Invalid image dimensions, format, or data size");
         }
-
     }
 
     // Constructor with data (move)
-    Image(int32_t width, int32_t height, PixelFormat format,
-          int32_t stride, vector<uint8_t>&& data)
+    Image(int32_t width, int32_t height, PixelFormat format, vector<uint8_t>&& data)
         : width(width),
           height(height),
           format(format),
-          stride(stride),
-          buffer(make_shared<vector<uint8_t>>(std::move(data))),
-          isValid(true)
-          {
-
-
-            cout << "w " << width << " h: " << height << " f : " << static_cast<int>(format);
-            if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN || 
-                data.size() != static_cast<size_t>(height * stride)) {
-
-                throw ImageException("Invalid image dimensions, format, or data size");
-            }
+          stride(width * bytesPerStride(bitsPerPixel(format))),
+          buffer(std::move(data)), // Move ownership
+          isValid(true) {
+        if (width <= 0 || height <= 0 || format == PixelFormat::UNKNOWN || 
+            buffer.size() != static_cast<size_t>(height * stride)) {
+            throw ImageException("Invalid image dimensions, format, or data size");
+        }
     }
 
-    // Copy Constructor
+    // Copy Constructor (Deep Copy)
     Image(const Image& other)
         : width(other.width),
           height(other.height),
           format(other.format),
           stride(other.stride),
-          buffer(other.buffer),
+          buffer(other.buffer), // Deep copy
           isValid(other.isValid) {}
 
-    Image clone() const {
-        if(!isValid){
-            throw ImageException("Cannot clone an invalid image");
+    // Assignment Operator (Deep Copy)
+    Image& operator=(const Image& other) {
+        if (this == &other) {
+            return *this; // Handle self-assignment
         }
-        return Image(width,height,format,*buffer);
+        width = other.width;
+        height = other.height;
+        format = other.format;
+        stride = other.stride;
+        buffer = other.buffer; // Deep copy
+        isValid = other.isValid;
+        return *this;
     }
 
+    // Move Constructor
+    Image(Image&& other)
+        : width(other.width),
+          height(other.height),
+          format(other.format),
+          stride(other.stride),
+          buffer(std::move(other.buffer)), // Take ownership
+          isValid(other.isValid) {
+        other.isValid = false;
+    }
+
+    // Move Assignment Operator
+    Image& operator=(Image&& other) noexcept {
+        if (this == &other) {
+            return *this;
+        }
+        width = other.width;
+        height = other.height;
+        format = other.format;
+        stride = other.stride;
+        buffer = std::move(other.buffer); // Take ownership
+        isValid = other.isValid;
+        other.isValid = false;
+        return *this;
+    }
 
     // Accessors
     int32_t getWidth() const { return width; }
     int32_t getHeight() const { return height; }
     int32_t getStride() const { return stride; }
     PixelFormat getFormat() const { return format; }
-
-
-    void setStride(int32_t newStride) { stride = newStride; };
-    void setFormat(PixelFormat newFormat){
-        format = newFormat; 
-        stride = bytesPerStride(bitsPerPixel(format));
+    const vector<uint8_t>& getData() const { return buffer; }
+    vector<uint8_t>& getData() {
+        return buffer;
     }
 
-    vector<uint8_t>& getData() const {
-        if (!isValid) {
-            throw ImageException("Image is invalid");
-        }
-        return *buffer;
-    }
-
-    // Set Data
+    // Set Data (Deep Copy)
     void setData(const vector<uint8_t>& data) {
         if (data.size() != static_cast<size_t>(height * stride)) {
-            throw ImageException("Image setData size mismatch got: " +to_string( data.size()) + " expected " + to_string(height * stride));
+            throw ImageException("Image setData size mismatch");
         }
-        buffer = make_shared<vector<uint8_t>>(data.begin(), data.end()); // Deep copy
+        buffer = data; // Deep copy
         isValid = true;
     }
-    void setData(const vector<uint8_t>&& data) {
-        if (data.size() != static_cast<size_t>(height * stride)) {
 
-            throw ImageException("Image setData size mismatch got: " +to_string( data.size()) + " expected " + to_string(height * stride));
+    // Set Data (Move)
+    void setData(vector<uint8_t>&& data) {
+        if (data.size() != static_cast<size_t>(height * stride)) {
+            throw ImageException("Image setData size mismatch");
         }
-        buffer = make_shared<vector<uint8_t>>(std::move(data)); // move opeartion take owenership of bufferj
+        buffer = std::move(data); // Move ownership
         isValid = true;
     }
+
     // Check Validity
     bool isImageValid() const { return isValid; }
 
-    uint32_t bytesPerLine() const {
-        return  (width * bitsPerPixel(format) + 7) / 8;
-    }
-
-private:   
-
+private:
+    
     uint32_t bytesPerStride(uint32_t bitsPerLine) const {
         return (((bitsPerLine + 31) / 32) * 32) / 8;
     }
@@ -193,19 +199,17 @@ private:
     }
 
 
-
-
 };
 
+const  map<int, PixelFormat> Image::kBitDepthPixelMap = {
+        {1, PixelFormat::GRAYSCALE1},
+        {2, PixelFormat::GRAYSCALE2},
+        {4, PixelFormat::GRAYSCALE4},
+        {8, PixelFormat::GRAYSCALE8},
+        {24, PixelFormat::RGB24},
+        {32, PixelFormat::RGBA32},
+    };
 
-const std::map<int, PixelFormat> Image::kBitDepthPixelMap = {
-    {1, PixelFormat::GRAYSCALE1},
-    {2, PixelFormat::GRAYSCALE2},
-    {4, PixelFormat::GRAYSCALE4},
-    {8, PixelFormat::GRAYSCALE8},
-    {24, PixelFormat::RGB24},
-    {32, PixelFormat::RGBA32},
-};
+ 
 
-#endif // IMAGE_H
-
+#endif

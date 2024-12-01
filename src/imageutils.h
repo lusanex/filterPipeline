@@ -137,7 +137,7 @@ public:
             }
         }
 
-        printBMPHeaders(fileHeader,infoHeader,colorHeader);
+        //printBMPHeaders(fileHeader,infoHeader,colorHeader);
         // Move to pixel data location
         file.seekg(fileHeader.offset_data, file.beg);
 
@@ -211,7 +211,7 @@ public:
         }
 
         // Write BMP file
-        ofstream file(filename, std::ios::binary);
+        ofstream file(filename, ios::binary);
         if (!file.is_open()) {
             throw std::runtime_error("Error: Unable to open file " + filename);
         }

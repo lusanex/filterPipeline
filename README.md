@@ -1,7 +1,5 @@
 # Filter Pipeline Framework
 
-# Filter Pipeline Framework
-
 ## Overview
 
 The **Filter Pipeline Framework** is a modular system designed to process video or image streams using a sequence of calculators. Each calculator performs specific tasks on the data, such as grayscale conversion, dithering, pixelation, or applying overlays. The framework is built around a central **Scheduler** that manages calculators and their associated contexts, ensuring smooth execution and data flow.

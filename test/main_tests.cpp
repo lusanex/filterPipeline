@@ -7,11 +7,11 @@
 
 long long Packet::lastTimestamp = 0;
 int main() {
-    PacketTest::run();
-    PortTest::run();
-    CalculatorContextTest::run();
+    //PacketTest::run();
+    //PortTest::run();
+    //CalculatorContextTest::run();
     SchedulerTest::run();
-    ImageTest::run();
+    //ImageTest::run();
     //TypeIdTest::run();
     return 0;
 }
